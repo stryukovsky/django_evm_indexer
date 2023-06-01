@@ -1,8 +1,7 @@
 import abc
 from typing import List, Dict
 
-from .fetching_methods import AbstractFetchingMethod
-from .token_actions import TokenTransfer
+from .transactions import TransferTransaction
 
 
 class AbstractStrategy(abc.ABC):
@@ -12,13 +11,13 @@ class AbstractStrategy(abc.ABC):
         self.strategy_params = strategy_params
 
     @abc.abstractmethod
-    def start(self, token_transfers: List[TokenTransfer]):
+    def start(self, token_transfers: List[TransferTransaction]):
         pass
 
 
 class RecipientStrategy(AbstractStrategy):
 
-    def start(self, token_transfers: List[TokenTransfer]):
+    def start(self, token_transfers: List[TransferTransaction]):
         recipient = self.strategy_params.get("recipient")
         if not recipient:
             raise ValueError("Strategy has no `recipient` provided. Please add recipient address to the strategy dict")
@@ -29,7 +28,7 @@ class RecipientStrategy(AbstractStrategy):
 
 class SenderStrategy(AbstractStrategy):
 
-    def start(self, token_transfers: List[TokenTransfer]):
+    def start(self, token_transfers: List[TransferTransaction]):
         if not (sender := self.strategy_params.get("sender")):
             raise ValueError("Strategy has no sender provided. Please add sender address to the strategy dict")
         for transfer in token_transfers:
@@ -39,12 +38,12 @@ class SenderStrategy(AbstractStrategy):
 
 class TokenScanStrategy(AbstractStrategy):
 
-    def start(self, token_transfers: List[TokenTransfer]):
+    def start(self, token_transfers: List[TransferTransaction]):
         for transfer in token_transfers:
             print(str(transfer))
 
 
 class TokenomicsStrategy(AbstractStrategy):
 
-    def start(self, token_transfer: List[TokenTransfer]):
+    def start(self, token_transfer: List[TransferTransaction]):
         raise NotImplementedError

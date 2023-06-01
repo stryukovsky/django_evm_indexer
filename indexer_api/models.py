@@ -63,6 +63,7 @@ class Indexer(models.Model):
                                                          verbose_name="Short sleep is time between two filter requests to blockchain")
     long_sleep_seconds = models.PositiveBigIntegerField(default=5,
                                                         verbose_name="Indexer will sleep this time if no new blocks in blockchain by the moment")
+    strategy_params = models.JSONField(verbose_name="Configure indexer's strategy using JSON dict")
 
     def __str__(self):
         return f"{self.name}"

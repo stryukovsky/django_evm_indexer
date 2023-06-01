@@ -8,24 +8,24 @@ from .utils import AbiDecoder
 
 
 @dataclasses.dataclass
-class TokenTransfer(abc.ABC):
+class TransferTransaction(abc.ABC):
     sender: ChecksumAddress
     recipient: ChecksumAddress
     tx_hash: HexStr
 
     @staticmethod
     @abc.abstractmethod
-    def from_event_entry(event_entry: Dict) -> List["TokenTransfer"]:
+    def from_event_entry(event_entry: Dict) -> List["TransferTransaction"]:
         raise NotImplementedError()
 
     @classmethod
     @abc.abstractmethod
-    def from_raw_log(cls, event: LogReceipt) -> List["TokenTransfer"]:
+    def from_raw_log(cls, event: LogReceipt) -> List["TransferTransaction"]:
         raise NotImplementedError()
 
 
 @dataclasses.dataclass
-class NativeCurrencyTransfer(TokenTransfer):
+class NativeCurrencyTransferTransaction(TransferTransaction):
     amount: int
 
     @staticmethod
@@ -33,58 +33,58 @@ class NativeCurrencyTransfer(TokenTransfer):
         raise NotImplementedError("It is impossible to handle native currency transfer, use receipt-based way")
 
     @classmethod
-    def from_raw_log(cls, event: LogReceipt) -> Optional["TokenTransfer"]:
+    def from_raw_log(cls, event: LogReceipt) -> Optional["TransferTransaction"]:
         raise NotImplementedError("It is impossible to handle native currency transfer, use receipt-based way")
 
 
 @dataclasses.dataclass
-class FungibleTokenTransfer(TokenTransfer):
+class FungibleTransferTransaction(TransferTransaction):
     event_hash = Web3.keccak(text="Transfer(address,address,uint256)")
     amount: int
 
     @classmethod
-    def from_raw_log(cls, event: LogReceipt) -> List["FungibleTokenTransfer"]:
+    def from_raw_log(cls, event: LogReceipt) -> List["FungibleTransferTransaction"]:
         if event["topics"][0] != cls.event_hash:
             return []
-        return [FungibleTokenTransfer(sender=AbiDecoder.bytes32_to_address(event["topics"][1]),
-                                      recipient=AbiDecoder.bytes32_to_address(event["topics"][2]),
-                                      tx_hash=HexStr(event["transactionHash"].hex()),
-                                      amount=AbiDecoder.bytes32_to_uint256(HexBytes(event["data"])))]
+        return [FungibleTransferTransaction(sender=AbiDecoder.bytes32_to_address(event["topics"][1]),
+                                            recipient=AbiDecoder.bytes32_to_address(event["topics"][2]),
+                                            tx_hash=HexStr(event["transactionHash"].hex()),
+                                            amount=AbiDecoder.bytes32_to_uint256(HexBytes(event["data"])))]
 
     @staticmethod
-    def from_event_entry(event_entry: Dict) -> List["FungibleTokenTransfer"]:
-        return [FungibleTokenTransfer(event_entry["args"]["from"], event_entry["args"]["to"],
-                                      event_entry["transactionHash"].hex(), event_entry["args"]["value"])]
+    def from_event_entry(event_entry: Dict) -> List["FungibleTransferTransaction"]:
+        return [FungibleTransferTransaction(event_entry["args"]["from"], event_entry["args"]["to"],
+                                            event_entry["transactionHash"].hex(), event_entry["args"]["value"])]
 
     def __str__(self):
         return f"Tokens {self.amount} sent {self.sender} -> {self.recipient}"
 
 
 @dataclasses.dataclass
-class NonFungibleTokenTransfer(TokenTransfer):
+class NonFungibleTransferTransaction(TransferTransaction):
     event_hash = Web3.keccak(text="Transfer(address,address,uint256)")
     token_id: int
 
     @classmethod
-    def from_raw_log(cls, event: LogReceipt) -> List["NonFungibleTokenTransfer"]:
+    def from_raw_log(cls, event: LogReceipt) -> List["NonFungibleTransferTransaction"]:
         if event["topics"][0] != cls.event_hash:
             return []
-        return [NonFungibleTokenTransfer(sender=AbiDecoder.bytes32_to_address(event["topics"][1]),
-                                         recipient=AbiDecoder.bytes32_to_address(event["topics"][2]),
-                                         tx_hash=HexStr(event["transactionHash"].hex()),
-                                         token_id=AbiDecoder.bytes32_to_uint256(HexBytes(event["data"])))]
+        return [NonFungibleTransferTransaction(sender=AbiDecoder.bytes32_to_address(event["topics"][1]),
+                                               recipient=AbiDecoder.bytes32_to_address(event["topics"][2]),
+                                               tx_hash=HexStr(event["transactionHash"].hex()),
+                                               token_id=AbiDecoder.bytes32_to_uint256(HexBytes(event["data"])))]
 
     @staticmethod
-    def from_event_entry(event_entry: Dict) -> List["NonFungibleTokenTransfer"]:
-        return [NonFungibleTokenTransfer(event_entry["args"]["from"], event_entry["args"]["to"],
-                                         event_entry["transactionHash"].hex(), event_entry["args"]["tokenId"])]
+    def from_event_entry(event_entry: Dict) -> List["NonFungibleTransferTransaction"]:
+        return [NonFungibleTransferTransaction(event_entry["args"]["from"], event_entry["args"]["to"],
+                                               event_entry["transactionHash"].hex(), event_entry["args"]["tokenId"])]
 
     def __str__(self):
         return f"Token {self.token_id} sent {self.sender} -> {self.recipient}"
 
 
 @dataclasses.dataclass
-class ERC1155TokenTransfer(FungibleTokenTransfer, NonFungibleTokenTransfer):
+class ERC1155TokenTransfer(FungibleTransferTransaction, NonFungibleTransferTransaction):
     operator: ChecksumAddress
 
     event_hash_single = Web3.keccak(text="TransferSingle(address,address,address,uint256,uint256)")
