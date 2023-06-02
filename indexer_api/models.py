@@ -35,6 +35,9 @@ class TokenType(models.TextChoices):
     erc777 = "erc777"
     erc1155 = "erc1155"
 
+class IndexerStatus(models.TextChoices):
+    on = "on"
+    off = "off"
 
 FUNGIBLE_TOKENS = [TokenType.native, TokenType.erc20, TokenType.erc777]
 NON_FUNGIBLE_TOKENS = [TokenType.erc721]
@@ -60,10 +63,12 @@ class Indexer(models.Model):
     watched_tokens = models.ManyToManyField("Token", related_name="indexers")
     strategy = models.CharField(max_length=STRING_LENGTH, choices=IndexerStrategy.choices)
     short_sleep_seconds = models.PositiveBigIntegerField(default=1,
-                                                         verbose_name="Short sleep is time between two filter requests to blockchain")
+                                                         help_text="Short sleep is time between two filter requests to blockchain")
     long_sleep_seconds = models.PositiveBigIntegerField(default=5,
-                                                        verbose_name="Indexer will sleep this time if no new blocks in blockchain by the moment")
-    strategy_params = models.JSONField(verbose_name="Configure indexer's strategy using JSON dict")
+                                                        help_text="Indexer will sleep this time if no new blocks in blockchain by the moment")
+    strategy_params = models.JSONField(verbose_name="Configure indexer's strategy using JSON dict", null=True)
+
+    status = models.CharField(max_length=STRING_LENGTH, choices=IndexerStatus.choices, default=IndexerStatus.off)
 
     def __str__(self):
         return f"{self.name}"
@@ -84,6 +89,9 @@ class Token(models.Model):
     def __str__(self):
         return f"{self.name} ({self.address})"
 
+    class Meta:
+        unique_together = [["address", "network"]]
+
 
 class TokenBalance(models.Model):
     holder = models.CharField(max_length=ETHEREUM_ADDRESS_LENGTH)
@@ -94,11 +102,15 @@ class TokenBalance(models.Model):
 
 
 class TokenTransfer(models.Model):
+    token_instance = models.ForeignKey(Token, related_name="transfers", on_delete=models.CASCADE)
     operator = models.CharField(max_length=ETHEREUM_ADDRESS_LENGTH, null=True, blank=True)
     sender = models.CharField(max_length=ETHEREUM_ADDRESS_LENGTH)
-    recipient: models.CharField(max_length=ETHEREUM_ADDRESS_LENGTH)
-    tx_hash: models.CharField(max_length=ETHEREUM_TX_HASH_LENGTH, unique=True)
+    recipient = models.CharField(max_length=ETHEREUM_ADDRESS_LENGTH)
+    tx_hash = models.CharField(max_length=ETHEREUM_TX_HASH_LENGTH, unique=True)
     token_id = models.DecimalField(max_digits=INT256_MAX_DIGITS, decimal_places=INT256_DECIMAL_PLACES, null=True,
                                    blank=True)
     amount = models.DecimalField(max_digits=INT256_MAX_DIGITS, decimal_places=INT256_DECIMAL_PLACES, null=True,
                                  blank=True)
+
+    def __str__(self):
+        return f"{self.token_instance.name} transfer {self.sender} → {self.recipient}"

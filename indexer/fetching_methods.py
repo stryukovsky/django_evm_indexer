@@ -1,6 +1,6 @@
 import abc
 import json
-from typing import List, Callable, Type, Dict, Sequence
+from typing import List, Callable, Type, Dict, Sequence, Tuple
 
 from web3 import Web3
 from web3.contract import Contract
@@ -24,7 +24,7 @@ class AbstractFetchingMethod(abc.ABC):
         self.token = token
 
     @abc.abstractmethod
-    def get_token_actions(self, from_block: int, to_block: int) -> List[TransferTransaction]:
+    def get_transactions(self, from_block: int, to_block: int) -> List[TransferTransaction]:
         pass
 
 
@@ -47,13 +47,13 @@ class EventFetchingMethod(AbstractFetchingMethod):
     @staticmethod
     def _get_abi(token_type: str) -> List[Dict]:
         if token_type == TokenType.erc20:
-            with open("abi/ERC20.json") as file:
+            with open("indexer/abi/ERC20.json") as file:
                 return json.load(file)
         if token_type == TokenType.erc721:
-            with open("abi/ERC721.json") as file:
+            with open("indexer/abi/ERC721.json") as file:
                 return json.load(file)
         if token_type == TokenType.erc1155:
-            with open("abi/ERC1155.json") as file:
+            with open("indexer/abi/ERC1155.json") as file:
                 return json.load(file)
         raise ValueError(f"Unknown token type or token's ABI not provided in `abi` folder: {token_type}")
 
@@ -76,7 +76,7 @@ class EventFetchingMethod(AbstractFetchingMethod):
         if token_type in ERC1155_TOKENS:
             return ERC1155TokenTransfer
 
-    def get_token_actions(self, from_block: int, to_block: int) -> List[TransferTransaction]:
+    def get_transactions(self, from_block: int, to_block: int) -> List[TransferTransaction]:
         if self.network_type == NetworkType.filterable:
             return self.__get_events_with_eth_filter(from_block, to_block)
         else:
@@ -99,9 +99,13 @@ class EventFetchingMethod(AbstractFetchingMethod):
             result.extend(self.token_action_type.from_raw_log(event))
         return result
 
+    def __str__(self):
+        return f"Events of tokens {self.token.address} ({self.token.type}) " \
+               f"on network {self.token.network.name} ({self.token.network.chain_id})"
+
 
 class ReceiptFetchingMethod(AbstractFetchingMethod):
-    def get_token_actions(self, from_block: int, to_block: int) -> List[TransferTransaction]:
+    def get_transactions(self, from_block: int, to_block: int) -> List[TransferTransaction]:
         token_actions = []
         for block_number in range(from_block, to_block + 1):
             block = self.w3.eth.get_block(block_number, full_transactions=True)
@@ -111,12 +115,16 @@ class ReceiptFetchingMethod(AbstractFetchingMethod):
                 try:
                     receipt: TxReceipt = self.w3.eth.get_transaction_receipt(transaction_hash=transaction["hash"])
                     if receipt["status"] != 0 and transaction["value"] != 0:
-                        token_actions.append(NativeCurrencyTransferTransaction(sender=receipt["from"], recipient=receipt["to"],
-                                                                               amount=transaction["value"],
-                                                                               tx_hash=transaction["hash"].hex()))
+                        token_actions.append(
+                            NativeCurrencyTransferTransaction(sender=receipt["from"], recipient=receipt["to"],
+                                                              amount=transaction["value"],
+                                                              tx_hash=transaction["hash"].hex()))
                         print(f"Transaction {transaction['hash'].hex()} is added to list")
                     else:
                         print(f"Transaction {transaction['hash'].hex()} is either failed or transfers no native")
                 except Exception as e:
                     print(f"Skip transaction {transaction['hash'].hex()} of block {block_number}: {e}")
         return token_actions
+
+    def __str__(self):
+        return f"Receipts of native currency on network {self.token.network.name} ({self.token.network.chain_id})"
