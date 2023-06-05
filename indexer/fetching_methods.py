@@ -1,7 +1,7 @@
 import abc
 import json
-from typing import List, Callable, Type, Dict, Sequence, Tuple
-
+from typing import List, Callable, Type, Dict, Sequence
+from logging import getLogger
 from web3 import Web3
 from web3.contract import Contract
 from web3.contract.base_contract import BaseContractEvent
@@ -13,6 +13,8 @@ from indexer.transactions import (TransferTransaction,
                                   ERC1155TokenTransfer,
                                   NativeCurrencyTransferTransaction)
 from indexer_api.models import Token, NetworkType, FUNGIBLE_TOKENS, NON_FUNGIBLE_TOKENS, ERC1155_TOKENS, TokenType
+
+logger = getLogger(__name__)
 
 
 class AbstractFetchingMethod(abc.ABC):
@@ -109,7 +111,7 @@ class ReceiptFetchingMethod(AbstractFetchingMethod):
         token_actions = []
         for block_number in range(from_block, to_block + 1):
             block = self.w3.eth.get_block(block_number, full_transactions=True)
-            print(f"Taking receipts of block {block_number}")
+            logger.info(f"Taking receipts of block {block_number}")
             transactions: Sequence[TxParams] = block["transactions"]
             for transaction in transactions:
                 try:
@@ -119,11 +121,11 @@ class ReceiptFetchingMethod(AbstractFetchingMethod):
                             NativeCurrencyTransferTransaction(sender=receipt["from"], recipient=receipt["to"],
                                                               amount=transaction["value"],
                                                               tx_hash=transaction["hash"].hex()))
-                        print(f"Transaction {transaction['hash'].hex()} is added to list")
+                        logger.info(f"Transaction {transaction['hash'].hex()} is added to list")
                     else:
-                        print(f"Transaction {transaction['hash'].hex()} is either failed or transfers no native")
+                        logger.info(f"Transaction {transaction['hash'].hex()} is either failed or transfers no native")
                 except Exception as e:
-                    print(f"Skip transaction {transaction['hash'].hex()} of block {block_number}: {e}")
+                    logger.info(f"Skip transaction {transaction['hash'].hex()} of block {block_number}: {e}")
         return token_actions
 
     def __str__(self):

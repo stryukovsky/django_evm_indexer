@@ -13,6 +13,9 @@ from indexer_api.models import (
 from indexer_api.models import TokenStrategy, IndexerStrategy
 from .fetching_methods import EventFetchingMethod, AbstractFetchingMethod
 from .transactions import TransferTransaction
+from logging import getLogger
+
+logger = getLogger(__name__)
 
 
 class Worker:
@@ -40,10 +43,10 @@ class Worker:
             from_block = self.indexer.last_block
             to_block = min(from_block + self.network.max_step, latest_block)
             if from_block == to_block:
-                print(f"No new blocks found, last block is {to_block}")
+                logger.info(f"No new blocks found, last block is {to_block}")
                 time.sleep(self.indexer.long_sleep_seconds)
                 continue
-            print(f"Fetching transfers [{from_block}; {to_block}]")
+            logger.info(f"Fetching transfers [{from_block}; {to_block}]")
             for fetching_method in self.fetching_methods:
                 if transfers := self.fetch_transfers(fetching_method, from_block, to_block):
                     if self.handle_transfers(fetching_method, transfers):
@@ -53,7 +56,7 @@ class Worker:
         try:
             return self.w3.eth.get_block("latest")["number"]
         except Exception as e:
-            print(f"During fetching last block error occurred: {e}")
+            logger.warning(f"During fetching last block error occurred: {e}")
             return None
 
     def increase_last_block(self, to_block):
@@ -66,7 +69,7 @@ class Worker:
         try:
             return fetching_method.get_transactions(from_block, to_block)
         except Exception as e:
-            print(f"During fetching {fetching_method} error occurred {e}")
+            logger.warning(f"During fetching {fetching_method} error occurred {e}")
             return []
 
     def handle_transfers(self, fetching_method: AbstractFetchingMethod, transfers: List[TransferTransaction]) -> bool:
@@ -74,7 +77,7 @@ class Worker:
             self.strategy.start(fetching_method.token, transfers)
             return True
         except Exception as e:
-            print(f"During handling fetched transfers ({fetching_method}) error occurred {e}")
+            logger.warning(f"During handling fetched transfers ({fetching_method}) error occurred {e}")
             return False
 
     def build_fetch_methods(self, tokens: List[Token]):

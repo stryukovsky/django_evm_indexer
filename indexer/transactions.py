@@ -1,5 +1,6 @@
 import abc
 import dataclasses
+from logging import getLogger
 from typing import Dict, Optional, List
 
 from web3 import Web3
@@ -7,6 +8,8 @@ from web3.types import ChecksumAddress, HexStr, HexBytes, LogReceipt
 
 from indexer_api.models import TokenTransfer
 from .utils import AbiDecoder
+
+logger = getLogger(__name__)
 
 
 @dataclasses.dataclass
@@ -168,7 +171,7 @@ class ERC1155TokenTransfer(FungibleTransferTransaction, NonFungibleTransferTrans
             ids = AbiDecoder.bytes_to_int_array(data, ids_location)
             amounts = AbiDecoder.bytes_to_int_array(data, amounts_location)
             if len(ids) != len(amounts):
-                print("Bad event")
+                logger.warning(f"Bad event on transaction {event['transactionHash'].hex()}")
                 return result
             for (i, token_id) in enumerate(ids):
                 amount = amounts[i]

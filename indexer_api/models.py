@@ -35,9 +35,11 @@ class TokenType(models.TextChoices):
     erc777 = "erc777"
     erc1155 = "erc1155"
 
+
 class IndexerStatus(models.TextChoices):
     on = "on"
     off = "off"
+
 
 FUNGIBLE_TOKENS = [TokenType.native, TokenType.erc20, TokenType.erc777]
 NON_FUNGIBLE_TOKENS = [TokenType.erc721]
@@ -66,7 +68,7 @@ class Indexer(models.Model):
                                                          help_text="Short sleep is time between two filter requests to blockchain")
     long_sleep_seconds = models.PositiveBigIntegerField(default=5,
                                                         help_text="Indexer will sleep this time if no new blocks in blockchain by the moment")
-    strategy_params = models.JSONField(verbose_name="Configure indexer's strategy using JSON dict", null=True)
+    strategy_params = models.JSONField(verbose_name="Configure indexer's strategy using JSON dict", null=True, blank=True)
 
     status = models.CharField(max_length=STRING_LENGTH, choices=IndexerStatus.choices, default=IndexerStatus.off)
 

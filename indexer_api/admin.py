@@ -6,7 +6,7 @@ from django.contrib.admin import register
 from django.db.models import QuerySet
 from docker import DockerClient
 from docker import from_env
-from django.utils.translation import ngettext
+from django.utils.html import format_html, mark_safe
 
 from indexer_api.models import Network, Indexer, Token, TokenBalance, TokenTransfer
 
@@ -82,6 +82,17 @@ def remove_indexer_containers(model_admin: Type["IndexerAdmin"], request, querys
 @register(Indexer)
 class IndexerAdmin(admin.ModelAdmin):
     actions = [turn_on_indexers, turn_off_indexers, remove_indexer_containers]
+
+    readonly_fields = ('logs', "status")
+
+    @admin.display(description="Logs")
+    def logs(self, instance: Indexer) -> str:
+        try:
+            container = client_keeper.get_instance().containers.get(instance.name)
+            log_entries = str(container.logs(tail=100).decode('utf-8')).replace("\n", "</code><br><code>")
+            return format_html("<code>{}</code>", mark_safe(log_entries))
+        except Exception as e:
+            return f"Failed to fetch logs: {e}"
 
 
 @register(Token)
