@@ -8,8 +8,11 @@ services:
       "POSTGRES_DB": django_evm_indexer
       "POSTGRES_USER": django_evm_indexer
       "POSTGRES_PASSWORD": "${POSTGRES_PASSWORD}"
+    networks:
+      - django_indexer_default
 
   indexer_api:
+    privileged: true
     image: django_evm_indexer
     build: .
     volumes:
@@ -23,7 +26,9 @@ services:
       "POSTGRES_PORT": 5432
       "SUPERUSER_USERNAME": "${SUPERUSER_USERNAME}"
       "SUPERUSER_PASSWORD": "${SUPERUSER_PASSWORD}"
-    command: ["/bin/sh", "run_api.sh"]
+    command: [ "/bin/sh", "run_api.sh" ]
+    networks:
+      - django_indexer_default
 
   nginx:
     build: nginx
@@ -33,3 +38,12 @@ services:
     ports:
       - "80:80"
       - "443:443"
+    networks:
+      - django_indexer_default
+
+networks:
+  django_indexer_default:
+    # noinspection ComposeUnknownKeys
+    name: django_indexer_default
+    driver: bridge
+
