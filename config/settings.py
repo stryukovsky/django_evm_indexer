@@ -24,7 +24,7 @@ SECRET_KEY = 'django-insecure-6-1j@7b^7e93@e_f7e061=m@*@p1uqy^t_g)@bdu05i-ik#@&h
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ["localhost", "135.181.123.217", "indexer.ongrid.pro"]
+ALLOWED_HOSTS = ["127.0.0.1", "localhost", "135.181.123.217", "indexer.ongrid.pro"]
 
 # Application definition
 
@@ -37,6 +37,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'indexer_api',
+    'prettyjson'
 ]
 
 MIDDLEWARE = [

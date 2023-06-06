@@ -29,7 +29,7 @@ class TransferTransaction(abc.ABC):
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def to_model_instance(self) -> TokenTransfer:
+    def to_token_transfer_model(self) -> TokenTransfer:
         pass
 
 
@@ -37,7 +37,7 @@ class TransferTransaction(abc.ABC):
 class NativeCurrencyTransferTransaction(TransferTransaction):
     token = None
 
-    def to_model_instance(self) -> TokenTransfer:
+    def to_token_transfer_model(self) -> TokenTransfer:
         token_transfer = TokenTransfer()
         token_transfer.amount = self.amount
         token_transfer.sender = self.sender
@@ -62,7 +62,7 @@ class FungibleTransferTransaction(TransferTransaction):
     event_hash = Web3.keccak(text="Transfer(address,address,uint256)")
     amount: int
 
-    def to_model_instance(self) -> TokenTransfer:
+    def to_token_transfer_model(self) -> TokenTransfer:
         model_instance = TokenTransfer()
         model_instance.amount = self.amount
         model_instance.sender = self.sender
@@ -98,7 +98,7 @@ class NonFungibleTransferTransaction(TransferTransaction):
     event_hash = Web3.keccak(text="Transfer(address,address,uint256)")
     token_id: int
 
-    def to_model_instance(self) -> TokenTransfer:
+    def to_token_transfer_model(self) -> TokenTransfer:
         model_instance = TokenTransfer()
         model_instance.amount = None
         model_instance.sender = self.sender
@@ -139,7 +139,7 @@ class ERC1155TokenTransfer(FungibleTransferTransaction, NonFungibleTransferTrans
     event_name_single = "TransferSingle"
     event_name_batch = "TransferBatch"
 
-    def to_model_instance(self) -> TokenTransfer:
+    def to_token_transfer_model(self) -> TokenTransfer:
         model_instance = TokenTransfer()
         model_instance.amount = self.amount
         model_instance.sender = self.sender

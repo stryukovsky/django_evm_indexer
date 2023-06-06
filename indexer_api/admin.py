@@ -7,8 +7,10 @@ from django.db.models import QuerySet
 from docker import DockerClient
 from docker import from_env
 from django.utils.html import format_html, mark_safe
-
 from indexer_api.models import Network, Indexer, Token, TokenBalance, TokenTransfer
+from django.forms import ModelForm
+
+from prettyjson import PrettyJSONWidget
 
 
 class ClientKeeper:
@@ -79,11 +81,21 @@ def remove_indexer_containers(model_admin: Type["IndexerAdmin"], request, querys
             model_admin.message_user(request, f"During container enabling error occurred{e}", messages.ERROR)
 
 
+class EditIndexerForm(ModelForm):
+    class Meta:
+        model = Indexer
+        widgets = {
+            "strategy_params": PrettyJSONWidget(),
+        }
+        fields = '__all__'
+
+
 @register(Indexer)
 class IndexerAdmin(admin.ModelAdmin):
     actions = [turn_on_indexers, turn_off_indexers, remove_indexer_containers]
 
     readonly_fields = ('logs', "status")
+    form = EditIndexerForm
 
     @admin.display(description="Logs")
     def logs(self, instance: Indexer) -> str:
