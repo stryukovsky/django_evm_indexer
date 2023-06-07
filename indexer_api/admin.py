@@ -114,7 +114,11 @@ class TokenAdmin(admin.ModelAdmin):
 
 @register(TokenBalance)
 class TokenBalanceAdmin(admin.ModelAdmin):
-    pass
+    readonly_fields = ("token_type",)
+
+    @admin.display(description="Token type")
+    def token_type(self, instance: TokenBalance) -> str:
+        return instance.token_instance.type
 
 
 @register(TokenTransfer)

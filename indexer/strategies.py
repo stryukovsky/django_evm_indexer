@@ -1,8 +1,13 @@
 import abc
+from abc import ABC
+from logging import getLogger
 from typing import List, Dict
 
 from indexer_api.models import Token, TokenTransfer, FUNGIBLE_TOKENS
-from .transactions import TransferTransaction
+from .transfer_transactions import TransferTransaction
+from web3.types import ChecksumAddress
+
+logger = getLogger(__name__)
 
 
 class AbstractStrategy(abc.ABC):
@@ -11,6 +16,8 @@ class AbstractStrategy(abc.ABC):
     def __init__(self, strategy_params: Dict):
         self.strategy_params = strategy_params
 
+
+class AbstractTransferStrategy(AbstractStrategy, abc.ABC):
     @abc.abstractmethod
     def start(self, token: Token, transfer_transactions: List[TransferTransaction]):
         pass
@@ -23,29 +30,62 @@ class AbstractStrategy(abc.ABC):
             token_transfer.save()
 
 
-class RecipientStrategy(AbstractStrategy):
+class RecipientStrategy(AbstractTransferStrategy):
 
     def start(self, token: Token, transfer_transactions: List[TransferTransaction]):
-        recipient = self.strategy_params.get("recipient")
-        if not recipient:
-            raise ValueError("Strategy has no `recipient` provided. Please add recipient address to the strategy dict")
-        for transfer_transaction in transfer_transactions:
-            if transfer_transaction.recipient == recipient:
-                self._save_transfer_to_database(token, transfer_transaction)
+        if not (recipient := self.strategy_params.get("recipient")):
+            raise ValueError("Strategy has no recipient provided. Please add recipient address to the strategy dict")
+        transfers_with_recipient = list(filter(lambda tx: tx.recipient == recipient, transfer_transactions))
+        logger.info(f"Found {len(transfers_with_recipient)} transfers of {token.address} with recipient {recipient}")
+        for transfer_transaction in transfers_with_recipient:
+            self._save_transfer_to_database(token, transfer_transaction)
+        logger.info(f"Saved transfers to database")
 
 
-class SenderStrategy(AbstractStrategy):
+class SenderStrategy(AbstractTransferStrategy):
 
     def start(self, token: Token, transfer_transactions: List[TransferTransaction]):
         if not (sender := self.strategy_params.get("sender")):
             raise ValueError("Strategy has no sender provided. Please add sender address to the strategy dict")
-        for transfer_transaction in transfer_transactions:
-            if transfer_transaction.sender == sender:
-                self._save_transfer_to_database(token, transfer_transaction)
+        transfers_with_sender = list(filter(lambda tx: tx.sender.lower() == sender.lower(), transfer_transactions))
+        logger.info(f"Found {len(transfers_with_sender)} transfers of {token.address} with sender {sender}")
+        for transfer_transaction in transfers_with_sender:
+            self._save_transfer_to_database(token, transfer_transaction)
+        logger.info(f"Saved transfers to database")
 
 
-class TokenScanStrategy(AbstractStrategy):
+class TokenScanStrategy(AbstractTransferStrategy):
 
     def start(self, token: Token, transfer_transactions: List[TransferTransaction]):
+        logger.info(f"Found {len(transfer_transactions)} transfers of {token.address}")
         for transfer_transaction in transfer_transactions:
             self._save_transfer_to_database(token, transfer_transaction)
+        logger.info(f"Saved transfers to database")
+
+
+class AbstractBalanceStrategy(AbstractStrategy, ABC):
+
+    @abc.abstractmethod
+    def start(self, token: Token) -> List[ChecksumAddress]:
+        raise NotImplementedError()
+
+
+class SpecifiedHoldersStrategy(AbstractBalanceStrategy):
+    def start(self, token: Token):
+        if not (holders := self.strategy_params.get("holders")):
+            raise ValueError("No holders specified. You need to set an array of holders which will be tracked")
+        logger.info(f"Specified holders are {holders}")
+        return holders
+
+
+class TransfersParticipantsStrategy(AbstractBalanceStrategy):
+
+    def start(self, token: Token) -> List[ChecksumAddress]:
+        transfer_participant_pair = TokenTransfer.objects.filter(token_instance=token).values("sender",
+                                                                                              "recipient").distinct()
+        result = set()
+        for pair in transfer_participant_pair:
+            result.add(pair["sender"])
+            result.add(pair["recipient"])
+        logger.info(f"Found {len(result)} token transfer participants. Find their balances")
+        return list(result)

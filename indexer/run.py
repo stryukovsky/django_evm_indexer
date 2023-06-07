@@ -11,11 +11,11 @@ django.setup()
 
 INDEXER_NAME = os.environ["INDEXER_NAME"]
 
-from indexer.main import Worker
+from indexer.indexers import IndexerWorkerFactory
 
 
 def main():
-    Worker(INDEXER_NAME).cycle()
+    IndexerWorkerFactory.build_indexer(INDEXER_NAME).cycle()
 
 
 if __name__ == "__main__":

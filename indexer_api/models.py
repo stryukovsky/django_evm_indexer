@@ -26,14 +26,22 @@ class IndexerStrategy(models.TextChoices):
     sender = "sender"
     token_scan = "token_scan"
     tokenomics = "tokenomics"
+    specified_holders = "specified_holders"
+    transfers_participants = "transfers_participants"
 
 
 class TokenType(models.TextChoices):
     native = "native"
     erc20 = "erc20"
     erc721 = "erc721"
+    erc721enumerable = "erc721enumerable"
     erc777 = "erc777"
     erc1155 = "erc1155"
+
+
+class IndexerType(models.TextChoices):
+    transfer_indexer = "transfer_indexer"
+    balance_indexer = "balance_indexer"
 
 
 class IndexerStatus(models.TextChoices):
@@ -42,7 +50,7 @@ class IndexerStatus(models.TextChoices):
 
 
 FUNGIBLE_TOKENS = [TokenType.native, TokenType.erc20, TokenType.erc777]
-NON_FUNGIBLE_TOKENS = [TokenType.erc721]
+NON_FUNGIBLE_TOKENS = [TokenType.erc721, TokenType.erc721enumerable]
 ERC1155_TOKENS = [TokenType.erc1155]
 
 
@@ -68,9 +76,11 @@ class Indexer(models.Model):
                                                          help_text="Short sleep is time between two filter requests to blockchain")
     long_sleep_seconds = models.PositiveBigIntegerField(default=5,
                                                         help_text="Indexer will sleep this time if no new blocks in blockchain by the moment")
-    strategy_params = models.JSONField(verbose_name="Configure indexer's strategy using JSON dict", null=True, blank=True)
+    strategy_params = models.JSONField(verbose_name="Configure indexer's strategy using JSON dict", null=True,
+                                       blank=True)
 
     status = models.CharField(max_length=STRING_LENGTH, choices=IndexerStatus.choices, default=IndexerStatus.off)
+    type = models.CharField(max_length=STRING_LENGTH, choices=IndexerType.choices, default=IndexerType.transfer_indexer)
 
     def __str__(self):
         return f"{self.name}"
@@ -89,7 +99,7 @@ class Token(models.Model):
     volume = models.DecimalField(max_digits=INT256_MAX_DIGITS, decimal_places=INT256_DECIMAL_PLACES, default=0)
 
     def __str__(self):
-        return f"{self.name} ({self.address})"
+        return f"{self.name} on {self.network.name} ({self.address})"
 
     class Meta:
         unique_together = [["address", "network"]]
@@ -97,10 +107,13 @@ class Token(models.Model):
 
 class TokenBalance(models.Model):
     holder = models.CharField(max_length=ETHEREUM_ADDRESS_LENGTH)
-    token = models.ForeignKey(Token, related_name="balances", on_delete=models.CASCADE)
+    token_instance = models.ForeignKey(Token, related_name="balances", on_delete=models.CASCADE)
 
-    amount: models.DecimalField(max_digits=INT256_MAX_DIGITS, decimal_places=INT256_DECIMAL_PLACES, null=True)
-    token_id: models.DecimalField(max_digits=INT256_MAX_DIGITS, decimal_places=INT256_DECIMAL_PLACES, null=True)
+    amount = models.DecimalField(max_digits=INT256_MAX_DIGITS, decimal_places=INT256_DECIMAL_PLACES, null=True)
+    token_id = models.DecimalField(max_digits=INT256_MAX_DIGITS, decimal_places=INT256_DECIMAL_PLACES, null=True)
+
+    def __str__(self):
+        return f"Balance of {self.holder} on {self.token_instance.address}"
 
 
 class TokenTransfer(models.Model):
