@@ -19,6 +19,8 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
       - /indexer_static:/indexer_static
     environment:
+      "SECRET_KEY": "${SECRET_KEY}"
+      "HOSTNAME": "${HOSTNAME}"
       "POSTGRES_DB": django_evm_indexer
       "POSTGRES_USER": django_evm_indexer
       "POSTGRES_PASSWORD": "${POSTGRES_PASSWORD}"

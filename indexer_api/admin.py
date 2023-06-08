@@ -31,6 +31,8 @@ client_keeper = ClientKeeper()
 def get_envs_for_indexer(indexer: str) -> List[str]:
     return [
         f"INDEXER_NAME={indexer}",
+        f"SECRET_KEY={os.environ['SECRET_KEY']}",
+        f"HOSTNAME={os.environ['HOSTNAME']}",
         f"POSTGRES_DB={os.environ['POSTGRES_DB']}",
         f"POSTGRES_USER={os.environ['POSTGRES_USER']}",
         f"POSTGRES_PASSWORD={os.environ['POSTGRES_PASSWORD']}",

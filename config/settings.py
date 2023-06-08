@@ -18,13 +18,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-6-1j@7b^7e93@e_f7e061=m@*@p1uqy^t_g)@bdu05i-ik#@&h'
+SECRET_KEY = os.environ["SECRET_KEY"]
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+# If debug variable is presented then it is debug mode. The value of debug variable has no actual effect
+DEBUG = "DEBUG" in os.environ
 
-ALLOWED_HOSTS = ["127.0.0.1", "localhost", "135.181.123.217", "indexer.ongrid.pro"]
+ALLOWED_HOSTS = ["127.0.0.1", "localhost", os.environ["HOSTNAME"]]
 
 # Application definition
 
@@ -55,8 +54,7 @@ ROOT_URLCONF = 'config.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'templates']
-        ,
+        'DIRS': [BASE_DIR / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -125,7 +123,7 @@ STATIC_ROOT = '/indexer_static'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-CSRF_TRUSTED_ORIGINS = ["https://indexer.ongrid.pro"]
+CSRF_TRUSTED_ORIGINS = [f"https://{os.environ['HOSTNAME']}"]
 
 LOGGING = {
     "version": 1,

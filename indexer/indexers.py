@@ -6,18 +6,23 @@ from typing import Dict, List, Optional
 from web3 import Web3
 from web3.middleware import geth_poa_middleware
 
+from indexer.balance_fetchers import AbstractBalanceFetcher, SimpleBalanceFetcher
+from indexer.strategies import (RecipientStrategy,
+                                SenderStrategy,
+                                TokenScanStrategy,
+                                AbstractTransferStrategy,
+                                SpecifiedHoldersStrategy,
+                                AbstractStrategy,
+                                AbstractBalanceStrategy,
+                                TransfersParticipantsStrategy)
 from indexer.transfer_fetchers import ReceiptTransferFetcher
-from indexer.strategies import RecipientStrategy, SenderStrategy, TokenScanStrategy, \
-    AbstractTransferStrategy, SpecifiedHoldersStrategy, AbstractStrategy, AbstractBalanceStrategy, \
-    TransfersParticipantsStrategy
 from indexer_api.models import (
     Network,
     Token,
     Indexer, IndexerType)
-from indexer_api.models import TokenStrategy, IndexerStrategy, TokenType
+from indexer_api.models import TokenStrategy, IndexerStrategy
 from .transfer_fetchers import EventTransferFetched, AbstractTransferFetcher
 from .transfer_transactions import TransferTransaction
-from indexer.balance_fetchers import AbstractBalanceFetcher, SimpleBalanceFetcher
 
 logger = getLogger(__name__)
 
