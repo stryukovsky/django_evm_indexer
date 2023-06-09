@@ -76,7 +76,7 @@ def restart_containers(model_admin: Type["IndexerAdmin"], request, queryset: Que
                                                         network="django_indexer_default",
                                                         environment=get_envs_for_indexer(indexer.name))
             model_admin.message_user(request, f"Successfully restarted container for {indexer.name} indexer", messages.SUCCESS)
-            indexer.status = IndexerStatus.off
+            indexer.status = IndexerStatus.on
             indexer.save()
         except Exception as e:
             model_admin.message_user(request, f"During restarting of container for {indexer.name}error occurred: {e}", messages.ERROR)
