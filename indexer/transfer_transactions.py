@@ -111,11 +111,14 @@ class NonFungibleTransferTransaction(TransferTransaction):
     def from_raw_log(cls, event: LogReceipt) -> List["NonFungibleTransferTransaction"]:
         if event["topics"][0] != cls.event_hash:
             return []
+        token_id = AbiDecoder.bytes32_to_uint256(HexBytes(event["data"]))
+        if token_id == 0 and len(event["topics"]) == 4:
+            token_id = AbiDecoder.bytes32_to_uint256(event["topics"][3])
         return [NonFungibleTransferTransaction(
             sender=AbiDecoder.bytes32_to_address(event["topics"][1]),
             recipient=AbiDecoder.bytes32_to_address(event["topics"][2]),
             tx_hash=HexStr(event["transactionHash"].hex()),
-            token_id=AbiDecoder.bytes32_to_uint256(HexBytes(event["data"])))]
+            token_id=token_id)]
 
     @staticmethod
     def from_event_entry(event_entry: Dict) -> List["NonFungibleTransferTransaction"]:

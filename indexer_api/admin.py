@@ -7,7 +7,7 @@ from django.db.models import QuerySet
 from docker import DockerClient
 from docker import from_env
 from django.utils.html import format_html, mark_safe
-from indexer_api.models import Network, Indexer, Token, TokenBalance, TokenTransfer, IndexerStatus
+from indexer_api.models import Network, Indexer, Token, TokenBalance, TokenTransfer, IndexerStatus, TokenType
 from django.forms import ModelForm
 
 from prettyjson import PrettyJSONWidget
@@ -46,8 +46,8 @@ class NetworkAdmin(admin.ModelAdmin):
     pass
 
 
-@admin.action(description="Turn ON indexer(s)")
-def turn_on_indexers(model_admin: Type["IndexerAdmin"], request, queryset: QuerySet[Indexer]):
+@admin.action(description="Create containers")
+def create_containers(model_admin: Type["IndexerAdmin"], request, queryset: QuerySet[Indexer]):
     for indexer in queryset:
         try:
             client_keeper.get_instance().containers.run("django_evm_indexer",
@@ -56,37 +56,43 @@ def turn_on_indexers(model_admin: Type["IndexerAdmin"], request, queryset: Query
                                                         command="python indexer/run.py",
                                                         network="django_indexer_default",
                                                         environment=get_envs_for_indexer(indexer.name))
-            model_admin.message_user(request, f"Successfully enabled {len(queryset)} indexer(s)", messages.SUCCESS)
+            model_admin.message_user(request, f"Successfully created container for {indexer.name}", messages.SUCCESS)
             indexer.status = IndexerStatus.on
             indexer.save()
         except Exception as e:
-            model_admin.message_user(request, f"During container enabling error occurred {e}", messages.ERROR)
+            model_admin.message_user(request, f"During creation of container for {indexer.name} error occurred {e}", messages.ERROR)
 
 
-@admin.action(description="Turn OFF indexer(s)")
-def turn_off_indexers(model_admin: Type["IndexerAdmin"], request, queryset: QuerySet[Indexer]):
-    for indexer in queryset:
-        try:
-            container = client_keeper.get_instance().containers.get(indexer.name)
-            container.stop()
-            model_admin.message_user(request, f"Successfully disabled {len(queryset)} indexer(s)", messages.SUCCESS)
-            indexer.status = IndexerStatus.off
-            indexer.save()
-        except Exception as e:
-            model_admin.message_user(request, f"During container disabling error occurred: {e}", messages.ERROR)
-
-
-@admin.action(description="Remove indexer container(s)")
-def remove_indexer_containers(model_admin: Type["IndexerAdmin"], request, queryset: QuerySet[Indexer]):
+@admin.action(description="Restart containers")
+def restart_containers(model_admin: Type["IndexerAdmin"], request, queryset: QuerySet[Indexer]):
     for indexer in queryset:
         try:
             container = client_keeper.get_instance().containers.get(indexer.name)
             container.remove(force=True)
-            model_admin.message_user(request, f"Successfully enabled {len(queryset)} indexer(s)", messages.SUCCESS)
-            indexer.status = IndexerStatus.on
+            client_keeper.get_instance().containers.run("django_evm_indexer",
+                                                        detach=True,
+                                                        name=indexer.name,
+                                                        command="python indexer/run.py",
+                                                        network="django_indexer_default",
+                                                        environment=get_envs_for_indexer(indexer.name))
+            model_admin.message_user(request, f"Successfully restarted container for {indexer.name} indexer", messages.SUCCESS)
+            indexer.status = IndexerStatus.off
             indexer.save()
         except Exception as e:
-            model_admin.message_user(request, f"During container enabling error occurred{e}", messages.ERROR)
+            model_admin.message_user(request, f"During restarting of container for {indexer.name}error occurred: {e}", messages.ERROR)
+
+
+@admin.action(description="Remove containers")
+def remove_containers(model_admin: Type["IndexerAdmin"], request, queryset: QuerySet[Indexer]):
+    for indexer in queryset:
+        try:
+            container = client_keeper.get_instance().containers.get(indexer.name)
+            container.remove(force=True)
+            model_admin.message_user(request, f"Successfully removed container for {indexer.name} indexer", messages.SUCCESS)
+            indexer.status = IndexerStatus.off
+            indexer.save()
+        except Exception as e:
+            model_admin.message_user(request, f"During removing container for {indexer.name} error occurred: {e}", messages.ERROR)
 
 
 class EditIndexerForm(ModelForm):
@@ -100,7 +106,7 @@ class EditIndexerForm(ModelForm):
 
 @register(Indexer)
 class IndexerAdmin(admin.ModelAdmin):
-    actions = [turn_on_indexers, turn_off_indexers, remove_indexer_containers]
+    actions = [create_containers, restart_containers, remove_containers]
 
     readonly_fields = ('logs', "status")
     form = EditIndexerForm
@@ -126,9 +132,14 @@ class TokenBalanceAdmin(admin.ModelAdmin):
 
     @admin.display(description="Token type")
     def token_type(self, instance: TokenBalance) -> str:
-        return instance.token_instance.type
+        return TokenType(instance.token_instance.type).label
 
 
 @register(TokenTransfer)
 class TokenTransferAdmin(admin.ModelAdmin):
-    pass
+    readonly_fields = ("token_type",)
+    list_filter = ("token_instance",)
+
+    @admin.display(description="Token type")
+    def token_type(self, instance: TokenTransfer) -> str:
+        return TokenType(instance.token_instance.type).label

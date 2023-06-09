@@ -12,41 +12,41 @@ DEFAULT_LAST_BLOCK = 0
 
 
 class NetworkType(models.TextChoices):
-    filterable = "filterable"
-    no_filters = "no_filters"
+    filterable = ("filterable", "Filterable eth_filter")
+    no_filters = ("no_filters", "No filters supported")
 
 
 class TokenStrategy(models.TextChoices):
-    event_based_transfer = "event_based_transfer"
-    receipt_based_transfer = "receipt_based_transfer"
+    event_based_transfer = ("event_based_transfer", "Event-based transfers")
+    receipt_based_transfer = ("receipt_based_transfer", "Receipt-based transfers")
 
 
 class IndexerStrategy(models.TextChoices):
-    recipient = "recipient"
-    sender = "sender"
-    token_scan = "token_scan"
-    tokenomics = "tokenomics"
-    specified_holders = "specified_holders"
-    transfers_participants = "transfers_participants"
+    recipient = ("recipient", "Recipient")
+    sender = ("sender", "Sender")
+    token_scan = ("token_scan", "Scan transfers (all transfers are saved)")
+    tokenomics = ("tokenomics", "Tokenomics parameters")
+    specified_holders = ("specified_holders", "Specified holders")
+    transfers_participants = ("transfers_participants", "Transfer participants")
 
 
 class TokenType(models.TextChoices):
-    native = "native"
-    erc20 = "erc20"
-    erc721 = "erc721"
-    erc721enumerable = "erc721enumerable"
-    erc777 = "erc777"
-    erc1155 = "erc1155"
+    native = ("native", "Native")
+    erc20 = ("erc20", "ERC20 Fungible token")
+    erc721 = ("erc721", "NFT ERC721")
+    erc721enumerable = ("erc721enumerable", "NFT ERC721Enumerable")
+    erc777 = ("erc777", "ERC777 Fungible token")
+    erc1155 = ("erc1155", "ERC1155 collection token")
 
 
 class IndexerType(models.TextChoices):
-    transfer_indexer = "transfer_indexer"
-    balance_indexer = "balance_indexer"
+    transfer_indexer = ("transfer_indexer", "Transfer indexer")
+    balance_indexer = ("balance_indexer", "Balance indexer")
 
 
 class IndexerStatus(models.TextChoices):
-    on = "on"
-    off = "off"
+    on = ("on", "Active")
+    off = ("off", "Disabled")
 
 
 FUNGIBLE_TOKENS = [TokenType.native, TokenType.erc20, TokenType.erc777]
@@ -89,19 +89,19 @@ class Indexer(models.Model):
 class Token(models.Model):
     # not unique: possibly on several chains there can be tokens with the same address
     address = models.CharField(max_length=ETHEREUM_ADDRESS_LENGTH, null=True, blank=True)
-    name = models.CharField(max_length=STRING_LENGTH)
-    strategy = models.CharField(choices=TokenStrategy.choices, max_length=STRING_LENGTH)
+    name = models.CharField(max_length=STRING_LENGTH, help_text="Should be kebab-case. Example: usdt-ethereum-indexer")
+    strategy = models.CharField(choices=TokenStrategy.choices, max_length=STRING_LENGTH,
+                                help_text="Use receipt based transfer strategy with native token. Note: it can be very slow to index")
     network = models.ForeignKey(Network, related_name="tokens", on_delete=models.CASCADE)
-    type = models.CharField(choices=TokenType.choices, max_length=STRING_LENGTH)
+    type = models.CharField(choices=TokenType.choices, max_length=STRING_LENGTH,
+                            help_text="Options erc721 and erc721enumerable are the same if token is indexed only by transfers (not balances).")
 
     total_supply = models.DecimalField(max_digits=INT256_MAX_DIGITS, decimal_places=INT256_DECIMAL_PLACES,
                                        default=0)
     volume = models.DecimalField(max_digits=INT256_MAX_DIGITS, decimal_places=INT256_DECIMAL_PLACES, default=0)
 
     def __str__(self):
-        if not (address := self.address):
-            address = "native"
-        return f"{self.name} on {self.network.name} ({address})"
+        return f"{self.name} on {self.network.name}"
 
     class Meta:
         unique_together = [["address", "network"]]
