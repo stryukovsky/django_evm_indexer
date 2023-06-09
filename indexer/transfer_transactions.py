@@ -73,6 +73,8 @@ class FungibleTransferTransaction(TransferTransaction):
 
     @classmethod
     def from_raw_log(cls, event: LogReceipt) -> List["FungibleTransferTransaction"]:
+        if len(event["topics"]) != 3:
+            return []
         if event["topics"][0] != cls.event_hash:
             return []
         return [FungibleTransferTransaction(
@@ -109,6 +111,8 @@ class NonFungibleTransferTransaction(TransferTransaction):
 
     @classmethod
     def from_raw_log(cls, event: LogReceipt) -> List["NonFungibleTransferTransaction"]:
+        if len(event["topics"]) not in (3, 4):
+            return []
         if event["topics"][0] != cls.event_hash:
             return []
         token_id = AbiDecoder.bytes32_to_uint256(HexBytes(event["data"]))
@@ -153,6 +157,8 @@ class ERC1155TokenTransfer(FungibleTransferTransaction, NonFungibleTransferTrans
 
     @classmethod
     def from_raw_log(cls, event: LogReceipt) -> List["ERC1155TokenTransfer"]:
+        if len(event["topics"]) != 4:
+            return []
         data = HexBytes(event["data"])
         operator = AbiDecoder.bytes32_to_address(event["topics"][1])
         sender = AbiDecoder.bytes32_to_address(event["topics"][2])
