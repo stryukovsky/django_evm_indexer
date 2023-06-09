@@ -43,7 +43,7 @@ def get_envs_for_indexer(indexer: str) -> List[str]:
 
 @register(Network)
 class NetworkAdmin(admin.ModelAdmin):
-    pass
+    list_display = ("chain_id", "name", "rpc_url", "max_step", "type")
 
 
 @admin.action(description="Create containers")
@@ -60,7 +60,8 @@ def create_containers(model_admin: Type["IndexerAdmin"], request, queryset: Quer
             indexer.status = IndexerStatus.on
             indexer.save()
         except Exception as e:
-            model_admin.message_user(request, f"During creation of container for {indexer.name} error occurred {e}", messages.ERROR)
+            model_admin.message_user(request, f"During creation of container for {indexer.name} error occurred {e}",
+                                     messages.ERROR)
 
 
 @admin.action(description="Restart containers")
@@ -75,11 +76,13 @@ def restart_containers(model_admin: Type["IndexerAdmin"], request, queryset: Que
                                                         command="python indexer/run.py",
                                                         network="django_indexer_default",
                                                         environment=get_envs_for_indexer(indexer.name))
-            model_admin.message_user(request, f"Successfully restarted container for {indexer.name} indexer", messages.SUCCESS)
+            model_admin.message_user(request, f"Successfully restarted container for {indexer.name} indexer",
+                                     messages.SUCCESS)
             indexer.status = IndexerStatus.on
             indexer.save()
         except Exception as e:
-            model_admin.message_user(request, f"During restarting of container for {indexer.name}error occurred: {e}", messages.ERROR)
+            model_admin.message_user(request, f"During restarting of container for {indexer.name}error occurred: {e}",
+                                     messages.ERROR)
 
 
 @admin.action(description="Remove containers")
@@ -88,11 +91,13 @@ def remove_containers(model_admin: Type["IndexerAdmin"], request, queryset: Quer
         try:
             container = client_keeper.get_instance().containers.get(indexer.name)
             container.remove(force=True)
-            model_admin.message_user(request, f"Successfully removed container for {indexer.name} indexer", messages.SUCCESS)
+            model_admin.message_user(request, f"Successfully removed container for {indexer.name} indexer",
+                                     messages.SUCCESS)
             indexer.status = IndexerStatus.off
             indexer.save()
         except Exception as e:
-            model_admin.message_user(request, f"During removing container for {indexer.name} error occurred: {e}", messages.ERROR)
+            model_admin.message_user(request, f"During removing container for {indexer.name} error occurred: {e}",
+                                     messages.ERROR)
 
 
 class EditIndexerForm(ModelForm):
@@ -109,7 +114,10 @@ class IndexerAdmin(admin.ModelAdmin):
     actions = [create_containers, restart_containers, remove_containers]
 
     readonly_fields = ('logs', "status")
+    list_display = ("name", "status", "last_block", "network", "strategy", "type",)
     form = EditIndexerForm
+
+    list_filter = ("network", "status")
 
     @admin.display(description="Logs")
     def logs(self, instance: Indexer) -> str:
@@ -121,14 +129,12 @@ class IndexerAdmin(admin.ModelAdmin):
             return f"Failed to fetch logs: {e}"
 
 
-@register(Token)
-class TokenAdmin(admin.ModelAdmin):
-    pass
-
-
 @register(TokenBalance)
 class TokenBalanceAdmin(admin.ModelAdmin):
     readonly_fields = ("token_type",)
+
+    list_filter = ("token_instance",)
+    list_display = ("holder", "token_instance")
 
     @admin.display(description="Token type")
     def token_type(self, instance: TokenBalance) -> str:
@@ -139,7 +145,14 @@ class TokenBalanceAdmin(admin.ModelAdmin):
 class TokenTransferAdmin(admin.ModelAdmin):
     readonly_fields = ("token_type",)
     list_filter = ("token_instance",)
+    list_display = ("sender", "recipient", "token_instance", "tx_hash")
 
     @admin.display(description="Token type")
     def token_type(self, instance: TokenTransfer) -> str:
         return TokenType(instance.token_instance.type).label
+
+
+@register(Token)
+class TokenAdmin(admin.ModelAdmin):
+    list_display = ("name", "address", "type", "network")
+    list_filter = ("network", "type",)
