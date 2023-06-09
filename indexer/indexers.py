@@ -1,7 +1,7 @@
 import abc
 import time
 from logging import getLogger
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 
 from web3 import Web3
 from web3.middleware import geth_poa_middleware
@@ -82,13 +82,18 @@ class TransferIndexerWorker(AbstractIndexerWorker):
             return
         logger.info(f"Fetching transfers in blocks in the range [{from_block}; {to_block}]")
         for fetching_method in self.transfer_fetchers:
-            if transfers := self.fetch_transfers(fetching_method, from_block, to_block):
+            transfers, error = self.fetch_transfers(fetching_method, from_block, to_block)
+            if not error:
                 logger.info(f"Fetched {len(transfers)} transfers")
-                if self.handle_transfers(fetching_method, transfers):
-                    logger.info(f"Transfers handled successfully. Increase last block")
-                    self.increase_last_block(to_block)
+                if transfers:
+                    if self.handle_transfers(fetching_method, transfers):
+                        logger.info(f"Transfers handled successfully. Increase last block")
+                        self.increase_last_block(to_block)
+                    else:
+                        logger.info(f"Failed to handle transfers. Skip cycle and try again")
                 else:
-                    logger.info(f"Failed to handle transfers. Skip cycle and try again")
+                    logger.info(f"No events found. Go to next blocks scope")
+                    self.increase_last_block(to_block)
             else:
                 logger.info(f"Failed to fetch transfers. Skip cycle and try again")
 
@@ -105,12 +110,12 @@ class TransferIndexerWorker(AbstractIndexerWorker):
 
     @staticmethod
     def fetch_transfers(fetching_method: AbstractTransferFetcher, from_block: int, to_block: int) -> \
-            List[TransferTransaction]:
+            Tuple[List[TransferTransaction], Optional[Exception]]:
         try:
-            return fetching_method.get_transfers(from_block, to_block)
+            return fetching_method.get_transfers(from_block, to_block), None
         except Exception as e:
             logger.warning(f"During fetching {fetching_method} error occurred {e}")
-            return []
+            return [], e
 
     def handle_transfers(self, fetching_method: AbstractTransferFetcher, transfers: List[TransferTransaction]) -> bool:
         try:
