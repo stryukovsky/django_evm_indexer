@@ -20,6 +20,16 @@ jobs:
           POSTGRES_DB: github-actions
         ports:
           - 5432:5432
+    env:
+      SECRET_KEY: github-actions
+      HOSTNAME: github-actions
+      POSTGRES_HOST: localhost
+      POSTGRES_PORT: 5432
+      SUPERUSER_USERNAME: github-actions
+      SUPERUSER_PASSWORD: github-actions
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: github-actions
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
