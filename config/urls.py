@@ -21,3 +21,5 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('indexer_api/', include("indexer_api.urls"))
 ]
+
+admin.site.site_header = "EVM Indexer"

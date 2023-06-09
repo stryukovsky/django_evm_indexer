@@ -4,13 +4,13 @@ from typing import Type, Optional, List
 from django.contrib import admin, messages
 from django.contrib.admin import register
 from django.db.models import QuerySet
+from django.forms import ModelForm
+from django.utils.html import format_html, mark_safe
 from docker import DockerClient
 from docker import from_env
-from django.utils.html import format_html, mark_safe
-from indexer_api.models import Network, Indexer, Token, TokenBalance, TokenTransfer, IndexerStatus, TokenType
-from django.forms import ModelForm
-
 from prettyjson import PrettyJSONWidget
+
+from indexer_api.models import Network, Indexer, Token, TokenBalance, TokenTransfer, IndexerStatus, TokenType
 
 
 class ClientKeeper:
@@ -114,7 +114,7 @@ class IndexerAdmin(admin.ModelAdmin):
     actions = [create_containers, restart_containers, remove_containers]
 
     readonly_fields = ('logs', "status")
-    list_display = ("name", "status", "last_block", "network", "strategy", "type",)
+    list_display = ("name", "status", "type", "network", "last_block",  "strategy", )
     form = EditIndexerForm
 
     list_filter = ("network", "status")
@@ -145,11 +145,17 @@ class TokenBalanceAdmin(admin.ModelAdmin):
 class TokenTransferAdmin(admin.ModelAdmin):
     readonly_fields = ("token_type",)
     list_filter = ("token_instance",)
-    list_display = ("sender", "recipient", "token_instance", "tx_hash")
+    list_display = ("id", "sender", "recipient", "token_instance", "transaction")
 
     @admin.display(description="Token type")
     def token_type(self, instance: TokenTransfer) -> str:
         return TokenType(instance.token_instance.type).label
+
+    def transaction(self, instance: TokenTransfer) -> str:
+        if explorer_url := instance.token_instance.network.explorer_url:
+            return format_html(f"<a href='{explorer_url}/tx/{instance.tx_hash}'>{instance.tx_hash}</a>")
+        else:
+            return f"{instance.tx_hash}"
 
 
 @register(Token)

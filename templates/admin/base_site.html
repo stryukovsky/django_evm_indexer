@@ -1,0 +1,327 @@
+{% extends "admin/base_site.html" %}
+{% block extrahead %}
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300&family=Source+Code+Pro:wght@300&display=swap"
+          rel="stylesheet">
+    <style>
+        body {
+            background: var(--header-bg);
+        }
+
+        :root {
+            --evm-indexer-bg: #383C2A !important;
+            --evm-indexer-accent: #FE64A3 !important;
+            --evm-indexer-body-fg: white !important;
+            --evm-indexer-primary: #72091F;
+            --evm-indexer-selected: #CB807D !important;
+            --evm-indexer-quiet-color: #d9d9d9 !important;
+            --evm-indexer-link: white;
+            --evm-indexer-success: green;
+            --evm-indexer-error: red;
+
+            --evm-indexer-monospace-font: 'Source Code Pro', monospace;
+            --evm-indexer-primary-font: Roboto, "sans-serif";
+
+            --evm-indexer-menu-item-font-size: x-large;
+            --evm-indexer-heading-font-size: medium;
+
+            --header-bg: var(--evm-indexer-bg) !important;
+            --header-color: var(--evm-indexer-accent) !important;
+            --accent: var(--evm-indexer-accent) !important;
+            --primary: var(--evm-indexer-primary) !important;
+            --link-fg: var(--evm-indexer-link) !important;
+            --body-bg: var(--evm-indexer-bg) !important;
+            --hairline-color: transparent !important;
+            --selected-row: var(--evm-indexer-selected) !important;
+            --darkened-bg: var(--evm-indexer-bg) !important;
+            --body-fg: var(--evm-indexer-body-fg) !important;
+            --body-quiet-color: var(--evm-indexer-quiet-color) !important;
+            --object-tools-bg: var(--evm-indexer-accent) !important;
+            --default-button-bg: green !important;
+            --selected-bg: var(--evm-indexer-primary) !important;
+            --link-hover-color: var(--evm-indexer-accent) !important;
+            --link-selected-fg: var(--evm-indexer-accent) !important;
+            --button-bg: var(--evm-indexer-accent) !important;
+            --object-tools-hover-bg: var(--evm-indexer-primary) !important;
+
+            --font-family-primary: var(--evm-indexer-primary-font) !important;
+        }
+
+        /*
+        General rules
+         */
+
+        a.section, a.section:visited, a.section:link {
+            font-family: var(--evm-indexer-monospace-font) !important;
+            color: var(--evm-indexer-accent);
+        }
+
+        a:hover {
+            background: none;
+            color: var(--evm-indexer-body-fg);
+        }
+
+        .breadcrumbs {
+            display: none;
+        }
+
+        #nav-sidebar {
+            border-width: 0;
+        }
+
+        {#Make ADD ** button rounded#}
+        ul.object-tools > li > a {
+            border-radius: 35pt !important;
+            background-image: none !important;
+            padding-left: 10pt !important;
+            padding-right: 10pt !important;
+        }
+
+        {#make all links a bit larger to be noticed #}
+        a {
+            font-size: var(--evm-indexer-heading-font-size);
+        }
+
+        {#  some unfilterable listview columns needs to look the same as other columns #}
+        table thead th .text span {
+            font-size: var(--evm-indexer-heading-font-size);
+        }
+
+        div#changelist-filter > h2 {
+            background: transparent !important;
+            color: var(--evm-indexer-accent) !important;
+            font-size: var(--evm-indexer-menu-item-font-size);
+            font-family: var(--evm-indexer-monospace-font);
+        }
+
+
+        h1#site-name, div#content > h1 {
+            text-transform: uppercase;
+            color: var(--evm-indexer-quiet-color);
+            font-family: var(--evm-indexer-monospace-font) !important;
+            font-weight: lighter !important;
+        }
+
+        /*
+        Search & action bars
+         */
+
+        div#toolbar {
+            margin-left: 0 !important;
+            padding: 0 !important;
+        }
+
+        label[for="searchbar"] {
+            display: none !important;
+        }
+
+        {#make actions button have no redundant label#}
+        div.actions > label {
+            display: none;
+        }
+
+        form#changelist-search {
+            margin-bottom: 10pt !important;
+        }
+
+        {#make actions have no margin from left#}
+        div.actions > select {
+            margin-left: 0 !important;
+            width: 315pt !important;
+        }
+
+        div.actions > button.button {
+            margin-left: 5.7pt !important;
+            padding-left: 15pt !important;
+            padding-right: 15pt !important;
+            height: 19.5pt !important;
+        }
+
+        {#make actions have no margin from left#}
+        div.actions {
+            padding-left: 0 !important;
+        }
+
+        {#make checkbox of accent color#}
+        input[type=checkbox] {
+            accent-color: var(--evm-indexer-accent) !important;
+            margin: 0 !important;
+        }
+
+        {#make checkbox balanced#}
+        label.vCheckboxLabel {
+            padding: 0 0 0 5pt !important;
+        }
+
+
+        /**
+        Inputs, selects, selections and all related to inputing data
+         */
+
+        {#make text-like inputs rounded#}
+        input[type=text], input[type=password], input[type=email], input[type=url], input[type=number], input[type=tel],
+        textarea, select, .vTextField, select {
+            border-radius: 35px !important;
+            width: 300pt !important;
+            padding-left: 10pt !important;
+            font-family: var(--evm-indexer-monospace-font);
+        }
+
+        {#make all ethereum-data (addresses, hashes) be monospaced#}
+        td.field-transaction > a, td.field-transaction, input[name=address], td.field-address, th.field-holder, td.field-holder, th.field-sender, th.field-recipient, th.field-tx_hash, td.field-sender, td.field-recipient, td.field-tx_hash {
+            font-family: Consolas, monospace;
+            font-size: small;
+        }
+
+        {#make data transaction link accent-color hoverable#}
+        td.field-transaction > a:hover {
+            color: var(--evm-indexer-accent) !important;
+        }
+
+        {#make prettyjson widget buttons look according to the theme#}
+        button.parseraw, button.parsed {
+            background: var(--button-bg);
+            border-radius: 35pt;
+            border-color: transparent;
+            color: var(--evm-indexer-link);
+        }
+
+        {#make big inputs have padding so contents will be justified#}
+        select[multiple], textarea {
+            padding: 10pt !important;
+        }
+
+        {#make selection of theme-color#}
+        ::-moz-selection {
+            color: var(--evm-indexer-accent);
+        }
+
+        {#make selection of theme-color#}
+        ::selection {
+            color: var(--evm-indexer-accent);
+        }
+
+        {#make inputs when selected or used according to color theme#}
+        input:focus, select:focus, input.visited, select.visited {
+            outline: var(--evm-indexer-accent) !important;
+        }
+
+        {#make options of select according to color theme#}
+        option:checked {
+            color: var(--evm-indexer-link) !important;
+            background: var(--evm-indexer-accent) !important;
+        }
+
+        {#make buttons in the bottom of the form look according to the theme#}
+        button.button, input[type="submit"] {
+            color: var(--evm-indexer-link) !important;
+            background: var(--evm-indexer-accent) !important;
+            border-color: transparent !important;
+            border-radius: 35pt !important;
+            margin-left: 5pt !important;
+            height: auto !important;
+        }
+
+        /*
+        LEFT MENU
+         */
+
+        {#remove left menu border#}
+        #toggle-nav-sidebar {
+            border-width: 0;
+        }
+
+        {#remove reduntant header "Authentication and Authorization"#}
+        caption:has(> a[title="Models in the Authentication and Authorization application"]) {
+            display: none !important;
+        }
+
+        {#Make large name of site#}
+        h1#site-name > a {
+            font-size: xxx-large !important;
+        }
+
+        {#make headers of menu rounded#}
+        div.submit-row > input, div.submit-row > a.deletelink {
+            border-radius: 35pt;
+            text-align: center;
+        }
+
+        {#make current model selection transparent#}
+        tr.current-model {
+            background: transparent !important;
+        }
+
+        {#make color of current model accent#}
+        tr[class^="model"] > th > a[aria-current="page"] {
+            color: var(--evm-indexer-accent) !important;
+        }
+
+        {#make margins to the headers of menu #}
+        caption {
+            text-align: left !important;
+            background: transparent !important;
+        }
+
+        caption > a.section {
+            font-size: var(--evm-indexer-menu-item-font-size) !important;
+            font-weight: lighter !important;
+        }
+
+        {#do not display change buttons#}
+        a.changelink {
+            display: none !important;
+        }
+
+        {#make add button with no paddings and proper bg color#}
+        a.addlink {
+            background-image: none !important;
+            font-family: var(--evm-indexer-monospace-font) !important;
+            text-transform: uppercase;
+            color: var(--evm-indexer-quiet-color);
+        }
+
+        {#do not show icon for change link button#}
+        li.changelink {
+            background-image: none !important;
+            padding-left: 0 !important;
+        }
+
+        {#make large text for model titles#}
+        tr[class^="model"] > th > a {
+            font-size: var(--evm-indexer-menu-item-font-size) !important;
+            text-transform: uppercase;
+        }
+
+        {#remove upper search bar#}
+        input[type=search] {
+            display: none;
+        }
+
+        {#make rounded messages of success and error#}
+        li.success, li.error {
+            border-radius: 35pt !important;
+            margin-left: 15pt !important;
+            margin-right: 15pt !important;
+        }
+
+        {#make success green#}
+        li.success {
+            background: var(--evm-indexer-success) !important;
+
+        }
+
+        {#make error red#}
+        li.error {
+            background: var(--evm-indexer-error) !important;
+
+        }
+
+        {#remove theme toggle button#}
+        button.theme-toggle {
+            display: none;
+        }
+
+    </style>
+{% endblock %}
