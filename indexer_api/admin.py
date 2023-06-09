@@ -7,7 +7,7 @@ from django.db.models import QuerySet
 from docker import DockerClient
 from docker import from_env
 from django.utils.html import format_html, mark_safe
-from indexer_api.models import Network, Indexer, Token, TokenBalance, TokenTransfer
+from indexer_api.models import Network, Indexer, Token, TokenBalance, TokenTransfer, IndexerStatus
 from django.forms import ModelForm
 
 from prettyjson import PrettyJSONWidget
@@ -57,6 +57,8 @@ def turn_on_indexers(model_admin: Type["IndexerAdmin"], request, queryset: Query
                                                         network="django_indexer_default",
                                                         environment=get_envs_for_indexer(indexer.name))
             model_admin.message_user(request, f"Successfully enabled {len(queryset)} indexer(s)", messages.SUCCESS)
+            indexer.status = IndexerStatus.on
+            indexer.save()
         except Exception as e:
             model_admin.message_user(request, f"During container enabling error occurred {e}", messages.ERROR)
 
@@ -68,6 +70,8 @@ def turn_off_indexers(model_admin: Type["IndexerAdmin"], request, queryset: Quer
             container = client_keeper.get_instance().containers.get(indexer.name)
             container.stop()
             model_admin.message_user(request, f"Successfully disabled {len(queryset)} indexer(s)", messages.SUCCESS)
+            indexer.status = IndexerStatus.off
+            indexer.save()
         except Exception as e:
             model_admin.message_user(request, f"During container disabling error occurred: {e}", messages.ERROR)
 
@@ -79,6 +83,8 @@ def remove_indexer_containers(model_admin: Type["IndexerAdmin"], request, querys
             container = client_keeper.get_instance().containers.get(indexer.name)
             container.remove(force=True)
             model_admin.message_user(request, f"Successfully enabled {len(queryset)} indexer(s)", messages.SUCCESS)
+            indexer.status = IndexerStatus.on
+            indexer.save()
         except Exception as e:
             model_admin.message_user(request, f"During container enabling error occurred{e}", messages.ERROR)
 

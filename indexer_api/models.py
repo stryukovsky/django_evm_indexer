@@ -99,7 +99,9 @@ class Token(models.Model):
     volume = models.DecimalField(max_digits=INT256_MAX_DIGITS, decimal_places=INT256_DECIMAL_PLACES, default=0)
 
     def __str__(self):
-        return f"{self.name} on {self.network.name} ({self.address})"
+        if not (address := self.address):
+            address = "native"
+        return f"{self.name} on {self.network.name} ({address})"
 
     class Meta:
         unique_together = [["address", "network"]]
