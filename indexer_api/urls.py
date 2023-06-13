@@ -15,11 +15,9 @@ schema_view = get_schema_view(
     openapi.Info(
         title="EVM Indexer",
         default_version='v1',
-        description="""
-## EVM Indexer API 
-This API allows to get access to both administrative and indexed data through REST API interactions.
-**Indexers**, **Networks** and **Tokens** are configured by admin meanwhile **Indexed Balances** and **Transfers** are pushed by Indexers
-                    """,
+        description="## EVM Indexer API  "
+                    "This API allows to get access to both administrative and indexed data through REST API interactions.  "
+                    "**Indexers**, **Networks** and **Tokens** are configured by admin meanwhile **Indexed Balances** and **Transfers** are pushed by Indexers.  "
     ),
     public=True,
     permission_classes=[permissions.IsAdminUser],

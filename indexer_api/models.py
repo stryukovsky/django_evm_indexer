@@ -61,7 +61,8 @@ class Network(models.Model):
     max_step = models.PositiveBigIntegerField(default=DEFAULT_STEP)
     type = models.CharField(max_length=STRING_LENGTH, choices=NetworkType.choices)
     need_poa = models.BooleanField(default=False)
-    explorer_url = models.CharField(max_length=STRING_LENGTH * 10, default="", blank=True, help_text="Provide root URL of explorer with no trailing slash. Example: 'https://etherscan.io'") # possibly can store some token in it
+    # possibly can store some token in it
+    explorer_url = models.CharField(max_length=STRING_LENGTH * 10, default="", blank=True, help_text="Provide root URL of explorer with no trailing slash. Example: 'https://etherscan.io'")
 
     def __str__(self):
         return f"{self.name} ({self.chain_id})"
