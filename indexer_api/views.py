@@ -1,18 +1,135 @@
-from rest_framework.viewsets import ModelViewSet
-from indexer_api.models import Network, Token, Indexer
-from indexer_api.serializers import NetworkSerializer, TokenSerializer, IndexerSerializer
+from django.db.models import QuerySet
+from rest_framework.decorators import action
+from rest_framework.request import Request
+from rest_framework.response import Response
+from rest_framework.viewsets import ReadOnlyModelViewSet, ViewSet
+from rest_framework.views import APIView
+
+from indexer_api.models import Network, Token, Indexer, TokenBalance, TokenType, TokenTransfer
+from indexer_api.serializers import NetworkSerializer, TokenSerializer, IndexerSerializer, TokenBalanceSerializer, \
+    TokenTransferSerializer
+from drf_yasg.utils import swagger_auto_schema
+from django.utils.decorators import method_decorator
 
 
-class NetworkViewSet(ModelViewSet):
+@method_decorator(name='list', decorator=swagger_auto_schema(
+    operation_description="List of **Networks** being indexed by **Indexers**",
+    operation_id="List"
+))
+@method_decorator(name='retrieve', decorator=swagger_auto_schema(
+    operation_description="Information on EVM **Network** used by **Indexers**",
+    operation_id="Details"
+))
+class NetworkViewSet(ReadOnlyModelViewSet):
     queryset = Network.objects.all()
     serializer_class = NetworkSerializer
 
 
-class TokenViewSet(ModelViewSet):
+@method_decorator(name='list', decorator=swagger_auto_schema(
+    operation_description="List of **Tokens** being indexed by **Indexers**",
+    operation_id="List"
+))
+@method_decorator(name='retrieve', decorator=swagger_auto_schema(
+    operation_description="Information on **Token** used by **Indexers**",
+    operation_id="Details"
+))
+class TokenViewSet(ReadOnlyModelViewSet):
     queryset = Token.objects.all()
     serializer_class = TokenSerializer
 
 
-class IndexerViewSet(ModelViewSet):
+@method_decorator(name='list', decorator=swagger_auto_schema(
+    operation_description="List of **Indexers**",
+    operation_id="List"
+))
+@method_decorator(name='retrieve', decorator=swagger_auto_schema(
+    operation_description="Information on a single **Indexer**",
+    operation_id="Details"
+))
+class IndexerViewSet(ReadOnlyModelViewSet):
     queryset = Indexer.objects.all()
     serializer_class = IndexerSerializer
+
+
+class BalancesView(APIView):
+    """
+    Balances mainly are consist of
+    - **holder** Ethereum address
+    - their balance with either (or even both) **token_id** and **amount**
+    """
+
+    @staticmethod
+    def get_nft_ids(balances: QuerySet) -> list[int]:
+        result = []
+        for balance in balances:
+            if token_id := balance["token_id"]:
+                result.append(int(token_id))
+        return result
+
+    @staticmethod
+    def get_nft_amount(balances: QuerySet) -> int:
+        if not balances:
+            return 0
+        if not balances[0]["amount"]:
+            return 0
+        return int(balances[0]["amount"])
+
+    @staticmethod
+    def get_fungible_amount(balances: QuerySet) -> int:
+        if not balances:
+            return 0
+        if not balances["amount"]:
+            return 0
+        return int(balances[0]["amount"])
+
+    @staticmethod
+    def get_generalized_balance(balances: QuerySet) -> dict:
+        if not balances:
+            return {}
+        result = {}
+        for balance in balances:
+            token_id = int(balance["token_id"])
+            amount = int(balance["amount"])
+            result[token_id] = amount
+        return result
+
+    @swagger_auto_schema(operation_description="Get all listed tokens balance of **holder**",
+                         operation_id="By holder", operation_summary="By holder")
+    def get(self, request: Request, holder: str, format=None) -> Response:
+        networks = Network.objects.all()
+        response = {}
+        for network in networks:
+            chain_id = network.chain_id
+            response[chain_id] = {}
+            tokens = Token.objects.filter(network=network).all()
+            for token in tokens:
+                balances = TokenBalance.objects.filter(token_instance=token, holder__iexact=holder).values("token_id",
+                                                                                                           "amount")
+                token_type = token.type
+                match token_type:
+                    case TokenType.erc721enumerable:
+                        value = self.get_nft_ids(balances)
+                    case TokenType.erc721:
+                        value = self.get_nft_amount(balances)
+                    case TokenType.erc20:
+                        value = self.get_fungible_amount(balances)
+                    case TokenType.native:
+                        value = self.get_fungible_amount(balances)
+                    case _:
+                        value = self.get_generalized_balance(balances)
+
+                response[chain_id][token.address] = {
+                    "token_type": token_type,
+                    "balances": value
+                }
+        return Response(data=response)
+
+
+class TransfersViewSet(ViewSet):
+
+    @swagger_auto_schema(operation_description="Get all transfers made by **sender**",
+                         operation_id="By sender", operation_summary="By sender")
+    @action(url_path="sender/(?P<sender>0x[0-9a-fA-F]{40})", detail=False, methods=["get"])
+    def get_transfers_made_by_sender(self, request: Request, sender: str) -> Response:
+        transfers = TokenTransfer.objects.filter(sender__iexact=sender)
+        return Response(data=TokenTransferSerializer(instance=transfers, many=True).data)

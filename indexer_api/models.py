@@ -118,6 +118,9 @@ class TokenBalance(models.Model):
     def __str__(self):
         return f"Balance of {self.holder} on {self.token_instance.address}"
 
+    class Meta:
+        verbose_name = "Balance"
+
 
 class TokenTransfer(models.Model):
     token_instance = models.ForeignKey(Token, related_name="transfers", on_delete=models.CASCADE)
@@ -129,6 +132,9 @@ class TokenTransfer(models.Model):
                                    blank=True)
     amount = models.DecimalField(max_digits=INT256_MAX_DIGITS, decimal_places=INT256_DECIMAL_PLACES, null=True,
                                  blank=True)
+
+    class Meta:
+        verbose_name = "Transfer"
 
     def __str__(self):
         return f"{self.token_instance.name} transfer {self.sender} → {self.recipient}"

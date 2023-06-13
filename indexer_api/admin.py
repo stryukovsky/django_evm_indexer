@@ -10,7 +10,12 @@ from docker import DockerClient
 from docker import from_env
 from prettyjson import PrettyJSONWidget
 
-from indexer_api.models import Network, Indexer, Token, TokenBalance, TokenTransfer, IndexerStatus, TokenType
+from indexer_api.models import Network, Indexer, Token, TokenBalance, TokenTransfer, IndexerStatus, TokenType, \
+    FUNGIBLE_TOKENS, NON_FUNGIBLE_TOKENS
+
+from logging import getLogger
+
+logger = getLogger(__name__)
 
 
 class ClientKeeper:
@@ -43,7 +48,7 @@ def get_envs_for_indexer(indexer: str) -> List[str]:
 
 @register(Network)
 class NetworkAdmin(admin.ModelAdmin):
-    list_display = ("chain_id", "name", "rpc_url", "max_step", "type")
+    list_display = ("name", "chain_id", "rpc_url", "max_step", "type")
 
 
 @admin.action(description="Create containers")
@@ -114,7 +119,7 @@ class IndexerAdmin(admin.ModelAdmin):
     actions = [create_containers, restart_containers, remove_containers]
 
     readonly_fields = ('logs', "status")
-    list_display = ("name", "status", "type", "network", "last_block",  "strategy", )
+    list_display = ("name", "status", "type", "network", "last_block", "strategy",)
     form = EditIndexerForm
 
     list_filter = ("network", "status")
@@ -136,6 +141,9 @@ class TokenBalanceAdmin(admin.ModelAdmin):
     list_filter = ("token_instance",)
     list_display = ("holder", "token_instance")
 
+    search_fields = ("holder",)
+    search_help_text = ("Search by holders address")
+
     @admin.display(description="Token type")
     def token_type(self, instance: TokenBalance) -> str:
         return TokenType(instance.token_instance.type).label
@@ -143,9 +151,12 @@ class TokenBalanceAdmin(admin.ModelAdmin):
 
 @register(TokenTransfer)
 class TokenTransferAdmin(admin.ModelAdmin):
-    readonly_fields = ("token_type",)
+    readonly_fields = ('token_type',)
     list_filter = ("token_instance",)
     list_display = ("id", "sender", "recipient", "token_instance", "transaction")
+
+    search_fields = ("sender", "recipient", "tx_hash",)
+    search_help_text = format_html("Search by <b>sender/recipient address</b> or <b>tx_hash</b>")
 
     @admin.display(description="Token type")
     def token_type(self, instance: TokenTransfer) -> str:
@@ -156,6 +167,18 @@ class TokenTransferAdmin(admin.ModelAdmin):
             return format_html(f"<a href='{explorer_url}/tx/{instance.tx_hash}'>{instance.tx_hash}</a>")
         else:
             return f"{instance.tx_hash}"
+
+    def get_fieldsets(self, request, obj: TokenTransfer = None):
+        fieldsets = super(TokenTransferAdmin, self).get_fieldsets(request, obj)
+        fields = fieldsets[0][1]['fields']
+        try:
+            if obj.token_instance.type in FUNGIBLE_TOKENS:
+                del fields[fields.index("token_id")]
+            elif obj.token_instance.type in NON_FUNGIBLE_TOKENS:
+                del fields[fields.index("amount")]
+        except Exception as e:
+            logger.warning(f"Error in admin panel during TokenTransfer instance render {e}")
+        return fieldsets
 
 
 @register(Token)
