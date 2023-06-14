@@ -123,6 +123,14 @@ class BalancesView(APIView):
         return Response(data=response)
 
 
+@method_decorator(name='list', decorator=swagger_auto_schema(
+    operation_description="List of **Transfers**",
+    operation_id="List"
+))
+@method_decorator(name='retrieve', decorator=swagger_auto_schema(
+    operation_description="Details of a **Transfer**",
+    operation_id="Details"
+))
 class TransfersViewSet(ReadOnlyModelViewSet):
     queryset = TokenTransfer.objects.all()
     serializer_class = TokenTransferSerializer
