@@ -22,6 +22,8 @@ class NetworkViewSet(ReadOnlyModelViewSet):
     queryset = Network.objects.all()
     serializer_class = NetworkSerializer
 
+    lookup_field = "chain_id"
+
 
 @method_decorator(name='list', decorator=swagger_auto_schema(
     operation_description="List of **Tokens** being indexed by **Indexers**",

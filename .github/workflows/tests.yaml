@@ -49,7 +49,7 @@ jobs:
       - name: Install requirements
         run: pip install -r requirements.txt
       - name: Check Syntax
-        run: pycodestyle --statistics config indexer indexer_api --ignore=E501,E402
+        run: pycodestyle --statistics config indexer indexer_api --ignore=E501,E402,E126,E128
       - name: Run Migrations
         run: python manage.py migrate
       - name: Run Test

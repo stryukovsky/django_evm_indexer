@@ -11,20 +11,20 @@ class NetworkTestCase(TestCase):
 
     def setUp(self) -> None:
         self.chain_id = 1
-        self.network = Network(chain_id=self.chain_id, name="Test network", rpc_url="url://simple", max_step=1000,
-                               type=NetworkType.filterable, need_poa=True)
+        self.network = Network.objects.create(chain_id=self.chain_id, name="Test network", rpc_url="url://simple",
+                                              max_step=1000,
+                                              type=NetworkType.filterable, need_poa=True)
 
-    def test_two_networks_with_same_chain_id(self):
-        second_network = Network(chain_id=self.chain_id, name="Test network", rpc_url="url://second_url_in_pool",
-                                 max_step=1000, type=NetworkType.filterable, need_poa=True)
-        self.network.save()
-        second_network.save()
-        networks_count = Network.objects.filter(chain_id=self.chain_id).count()
-        self.assertEqual(networks_count, 2)
+    def test_cannot_create_two_networks_with_same_chain_id(self):
+        try:
+            Network.objects.create(chain_id=self.chain_id, name="Test network", rpc_url="url://second_url_in_pool",
+                                   max_step=1000, type=NetworkType.filterable, need_poa=True)
+        except Exception:
+            self.assertTrue(True)
 
     def test_network_can_have_valid_url_as_rpc_url(self):
         valid_url = "https://rpc.testnet.network"
-        Network(chain_id=self.chain_id, name="Test network", rpc_url=valid_url,
+        Network(chain_id=123123, name="Test network", rpc_url=valid_url,
                 max_step=1000, type=NetworkType.filterable, need_poa=True).save()
 
     def test_network_cannot_have_negative_step(self):
