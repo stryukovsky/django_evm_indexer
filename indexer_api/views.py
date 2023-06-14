@@ -1,15 +1,13 @@
 from django.db.models import QuerySet
-from rest_framework.decorators import action
+from django.utils.decorators import method_decorator
+from drf_yasg.utils import swagger_auto_schema
 from rest_framework.request import Request
 from rest_framework.response import Response
-from rest_framework.viewsets import ReadOnlyModelViewSet, ViewSet
 from rest_framework.views import APIView
+from rest_framework.viewsets import ReadOnlyModelViewSet
 
 from indexer_api.models import Network, Token, Indexer, TokenBalance, TokenType, TokenTransfer
-from indexer_api.serializers import NetworkSerializer, TokenSerializer, IndexerSerializer, TokenBalanceSerializer, \
-    TokenTransferSerializer
-from drf_yasg.utils import swagger_auto_schema
-from django.utils.decorators import method_decorator
+from indexer_api.serializers import NetworkSerializer, TokenSerializer, IndexerSerializer, TokenTransferSerializer
 
 
 @method_decorator(name='list', decorator=swagger_auto_schema(
@@ -125,11 +123,7 @@ class BalancesView(APIView):
         return Response(data=response)
 
 
-class TransfersViewSet(ViewSet):
-
-    @swagger_auto_schema(operation_description="Get all transfers made by **sender**",
-                         operation_id="By sender", operation_summary="By sender")
-    @action(url_path="sender/(?P<sender>0x[0-9a-fA-F]{40})", detail=False, methods=["get"])
-    def get_transfers_made_by_sender(self, request: Request, sender: str) -> Response:
-        transfers = TokenTransfer.objects.filter(sender__iexact=sender)
-        return Response(data=TokenTransferSerializer(instance=transfers, many=True).data)
+class TransfersViewSet(ReadOnlyModelViewSet):
+    queryset = TokenTransfer.objects.all()
+    serializer_class = TokenTransferSerializer
+    filterset_fields = ('sender', 'recipient', 'tx_hash', 'token_instance')

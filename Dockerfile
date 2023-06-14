@@ -3,6 +3,7 @@ WORKDIR /django_evm_indexer
 ADD config ./config
 ADD indexer_api ./indexer_api
 ADD indexer ./indexer
+ADD templates ./templates
 ADD .gitignore ./.gitignore
 ADD Dockerfile ./Dockerfile
 ADD manage.py ./manage.py
