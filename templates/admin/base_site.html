@@ -10,15 +10,15 @@
         }
 
         :root {
-            --evm-indexer-bg: #383C2A !important;
-            --evm-indexer-accent: #FE64A3 !important;
-            --evm-indexer-body-fg: white !important;
-            --evm-indexer-primary: #72091F;
-            --evm-indexer-selected: #CB807D !important;
+            --evm-indexer-bg: #3a3335 !important;
+            --evm-indexer-accent: #D81E5B !important;
+            --evm-indexer-body-fg: #FDF0D5 !important;
+            --evm-indexer-primary: #F0544F;
+            --evm-indexer-selected: #C6D8D3 !important;
             --evm-indexer-quiet-color: #d9d9d9 !important;
-            --evm-indexer-link: white;
-            --evm-indexer-success: green;
-            --evm-indexer-error: red;
+            --evm-indexer-link: var(--evm-indexer-body-fg);
+            --evm-indexer-success: #3F6634;
+            --evm-indexer-error: #D33F49;
 
             --evm-indexer-monospace-font: 'Source Code Pro', monospace;
             --evm-indexer-primary-font: Roboto, "sans-serif";
@@ -321,6 +321,20 @@
         {#remove theme toggle button#}
         button.theme-toggle {
             display: none;
+        }
+
+        /**
+        Recent actions main page style
+         */
+
+        div#recent-actions-module > h2, div#recent-actions-module > h3, span[class="mini quiet"]{
+            text-transform: uppercase;
+            font-family: var(--evm-indexer-monospace-font);
+        }
+
+        ul.actionlist > li.addlink{
+            background-image: none!important;
+            padding-left: 0!important;
         }
 
     </style>
