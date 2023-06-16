@@ -187,6 +187,7 @@ class Token(models.Model):
                 self.validate_native_token_address(self.address)
             case _:
                 self.validate_other_token_strategy(self.strategy)
+                self.validate_other_token_address(self.address)
 
     def __str__(self):
         return f"{self.name} on {self.network.name}"
@@ -208,6 +209,11 @@ class Token(models.Model):
     def validate_native_token_address(address: Optional[str]):
         if address is not None:
             raise ValidationError("Native token address should be null. Leave address field empty")
+
+    @staticmethod
+    def validate_other_token_address(address):
+        if address is None:
+            raise ValidationError("Non-native token must have address")
 
 
 class TokenBalance(models.Model):

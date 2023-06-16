@@ -8,6 +8,7 @@ from rest_framework.viewsets import ReadOnlyModelViewSet
 
 from indexer_api.models import Network, Token, Indexer, TokenBalance, TokenType, TokenTransfer
 from indexer_api.serializers import NetworkSerializer, TokenSerializer, IndexerSerializer, TokenTransferSerializer
+from django_filters import rest_framework as filters
 
 
 @method_decorator(name='list', decorator=swagger_auto_schema(
@@ -23,6 +24,7 @@ class NetworkViewSet(ReadOnlyModelViewSet):
     serializer_class = NetworkSerializer
 
     lookup_field = "chain_id"
+    ordering = ('-id',)
 
 
 @method_decorator(name='list', decorator=swagger_auto_schema(
@@ -36,6 +38,8 @@ class NetworkViewSet(ReadOnlyModelViewSet):
 class TokenViewSet(ReadOnlyModelViewSet):
     queryset = Token.objects.all()
     serializer_class = TokenSerializer
+    search_fields = ("network__chain_id", "address",)
+    ordering = ('-id',)
 
 
 @method_decorator(name='list', decorator=swagger_auto_schema(
@@ -50,6 +54,10 @@ class IndexerViewSet(ReadOnlyModelViewSet):
     queryset = Indexer.objects.all()
     serializer_class = IndexerSerializer
 
+    lookup_field = "name"
+    search_fields = ("network__chain_id",)
+    ordering = ('-id',)
+
 
 class BalancesView(APIView):
     """
@@ -59,28 +67,28 @@ class BalancesView(APIView):
     """
 
     @staticmethod
-    def get_nft_ids(balances: QuerySet) -> list[int]:
+    def get_nft_ids(balances: QuerySet) -> list[str]:
         result = []
         for balance in balances:
             if token_id := balance["token_id"]:
-                result.append(int(token_id))
+                result.append(str(token_id))
         return result
 
     @staticmethod
-    def get_nft_amount(balances: QuerySet) -> int:
+    def get_nft_amount(balances: QuerySet) -> str:
         if not balances:
-            return 0
+            return "0"
         if not balances[0]["amount"]:
-            return 0
-        return int(balances[0]["amount"])
+            return "0"
+        return str(balances[0]["amount"])
 
     @staticmethod
-    def get_fungible_amount(balances: QuerySet) -> int:
+    def get_fungible_amount(balances: QuerySet) -> str:
         if not balances:
-            return 0
-        if not balances["amount"]:
-            return 0
-        return int(balances[0]["amount"])
+            return "0"
+        if not balances[0].get("amount"):
+            return "0"
+        return str(balances[0]["amount"])
 
     @staticmethod
     def get_generalized_balance(balances: QuerySet) -> dict:
@@ -88,8 +96,8 @@ class BalancesView(APIView):
             return {}
         result = {}
         for balance in balances:
-            token_id = int(balance["token_id"])
-            amount = int(balance["amount"])
+            token_id = str(balance["token_id"])
+            amount = str(balance["amount"])
             result[token_id] = amount
         return result
 
@@ -120,7 +128,7 @@ class BalancesView(APIView):
 
                 response[chain_id][token.address] = {
                     "token_type": token_type,
-                    "balances": value
+                    "balance": value
                 }
         return Response(data=response)
 
