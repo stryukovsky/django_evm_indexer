@@ -4,7 +4,7 @@ import time
 from typing import List, Dict
 
 from web3 import Web3
-from indexer_api.models import Token
+from indexer_api.models import Token, Indexer
 from indexer_api.models import TokenType
 from web3.contract import Contract
 from web3.types import ChecksumAddress
@@ -13,15 +13,17 @@ from .balance_callers import AbstractBalanceCaller, ERC20BalanceCaller, ERC721En
 
 
 class AbstractBalanceFetcher(abc.ABC):
+    indexer: Indexer
     contract: Contract
     balance_caller: AbstractBalanceCaller
 
-    def __init__(self, w3: Web3, token: Token):
+    def __init__(self, w3: Web3, token: Token, indexer: Indexer):
         self.w3 = w3
         self.token = token
         abi = self._get_abi(token.type)
         address = token.address
         self.contract = self.w3.eth.contract(address=w3.to_checksum_address(address), abi=abi)
+        self.indexer = indexer
         self._build_balance_caller()
 
     @abc.abstractmethod
@@ -66,5 +68,6 @@ class SimpleBalanceFetcher(AbstractBalanceFetcher):
         for holder in holders:
             balances = self.balance_caller.get_balance(holder)
             for balance in balances:
+                balance.tracked_by = self.indexer
                 balance.save()
                 time.sleep(1)

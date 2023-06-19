@@ -5,7 +5,9 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.viewsets import ReadOnlyModelViewSet
+from django.http.response import HttpResponse
 
+from indexer_api.metrics import IndexerMetrics
 from indexer_api.models import Network, Token, Indexer, TokenBalance, TokenType, TokenTransfer
 from indexer_api.serializers import NetworkSerializer, TokenSerializer, IndexerSerializer, TokenTransferSerializer
 
@@ -146,3 +148,9 @@ class TransfersViewSet(ReadOnlyModelViewSet):
     search_fields = ('sender', 'recipient', 'token_instance__address')
 
     lookup_field = "tx_hash"
+
+
+class IndexerMetricsView(APIView):
+
+    def get(self, request: Request):
+        return HttpResponse(content=IndexerMetrics().to_prometheus_metrics(), content_type="text/plain")

@@ -3,9 +3,10 @@ from abc import ABC
 from logging import getLogger
 from typing import List, Dict
 
-from indexer_api.models import Token, TokenTransfer, FUNGIBLE_TOKENS
-from .transfer_transactions import TransferTransaction
 from web3.types import ChecksumAddress
+
+from indexer_api.models import Token, TokenTransfer, Indexer
+from .transfer_transactions import TransferTransaction
 
 logger = getLogger(__name__)
 
@@ -18,18 +19,24 @@ class AbstractStrategy(abc.ABC):
 
 
 class AbstractTransferStrategy(AbstractStrategy, abc.ABC):
+    indexer: Indexer
+
+    def __init__(self, indexer: Indexer, strategy_params: Dict):
+        super().__init__(strategy_params)
+        self.indexer = indexer
+
     @abc.abstractmethod
     def start(self, token: Token, transfer_transactions: List[TransferTransaction]):
         pass
 
-    @staticmethod
-    def _save_transfer_to_database(token: Token, transfer_transaction: TransferTransaction):
+    def _save_transfer_to_database(self, token: Token, transfer_transaction: TransferTransaction):
         token_transfer = transfer_transaction.to_token_transfer_model()
         if TokenTransfer.objects.filter(tx_hash=token_transfer.tx_hash).exists():
             logger.info(f"Transfer skipped: tx with hash {token_transfer.tx_hash} on token "
                         f"{token.name} (chain id: {token.network.chain_id}) already indexed")
         else:
             token_transfer.token_instance = token
+            token_transfer.fetched_by = self.indexer
             token_transfer.save()
 
 
@@ -38,7 +45,8 @@ class RecipientStrategy(AbstractTransferStrategy):
     def start(self, token: Token, transfer_transactions: List[TransferTransaction]):
         if not (recipient := self.strategy_params.get("recipient")):
             raise ValueError("Strategy has no recipient provided. Please add recipient address to the strategy dict")
-        transfers_with_recipient = list(filter(lambda tx: tx.recipient.lower() == recipient.lower(), transfer_transactions))
+        transfers_with_recipient = list(
+            filter(lambda tx: tx.recipient.lower() == recipient.lower(), transfer_transactions))
         logger.info(f"Found {len(transfers_with_recipient)} transfers of {token.name} with recipient {recipient}")
         for transfer_transaction in transfers_with_recipient:
             self._save_transfer_to_database(token, transfer_transaction)

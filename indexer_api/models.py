@@ -202,7 +202,7 @@ class Token(models.Model):
 
     @staticmethod
     def validate_other_token_strategy(strategy):
-        if strategy != TokenStrategy.receipt_based_transfer:
+        if strategy != TokenStrategy.event_based_transfer:
             raise ValidationError("Token strategy: non-native tokens should be tracked with Event-based strategy")
 
     @staticmethod
@@ -223,6 +223,9 @@ class TokenBalance(models.Model):
     amount = models.DecimalField(max_digits=INT256_MAX_DIGITS, decimal_places=INT256_DECIMAL_PLACES, null=True)
     token_id = models.DecimalField(max_digits=INT256_MAX_DIGITS, decimal_places=INT256_DECIMAL_PLACES, null=True)
 
+    tracked_by = models.ForeignKey(Indexer, related_name="tracked_balances", on_delete=models.SET_NULL, null=True,
+                                   blank=True)
+
     def __str__(self):
         return f"Balance of {self.holder} on {self.token_instance.address}"
 
@@ -240,6 +243,9 @@ class TokenTransfer(models.Model):
                                    blank=True)
     amount = models.DecimalField(max_digits=INT256_MAX_DIGITS, decimal_places=INT256_DECIMAL_PLACES, null=True,
                                  blank=True)
+
+    fetched_by = models.ForeignKey(Indexer, related_name="fetched_transfers", on_delete=models.SET_NULL, null=True,
+                                   blank=True)
 
     class Meta:
         verbose_name = "Transfer"

@@ -1,5 +1,6 @@
 from rest_framework.routers import SimpleRouter, Route, DynamicRoute
-from indexer_api.views import NetworkViewSet, TokenViewSet, IndexerViewSet, BalancesView, TransfersViewSet
+from indexer_api.views import NetworkViewSet, TokenViewSet, IndexerViewSet, BalancesView, TransfersViewSet, \
+    IndexerMetricsView
 from django.urls import path, re_path
 from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
@@ -26,6 +27,8 @@ urlpatterns = [
     path('docs/', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
     path('balances/holder/<slug:holder>', BalancesView.as_view(), name="Balances"),
     path('balances/holder/<slug:holder>/', BalancesView.as_view(), name="Balances"),
+    path('metrics/', IndexerMetricsView.as_view(), name="Metrics"),
+    path('metrics', IndexerMetricsView.as_view(), name="Metrics"),
 ]
 
 urlpatterns += router.urls

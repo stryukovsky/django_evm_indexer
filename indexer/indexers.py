@@ -139,11 +139,11 @@ class TransferIndexerWorker(AbstractIndexerWorker):
     def build_strategy(self, strategy: str, strategy_params: Dict):
         match strategy:
             case IndexerStrategy.recipient.value:
-                self.strategy = RecipientStrategy(strategy_params)
+                self.strategy = RecipientStrategy(self.indexer, strategy_params)
             case IndexerStrategy.sender.value:
-                self.strategy = SenderStrategy(strategy_params)
+                self.strategy = SenderStrategy(self.indexer, strategy_params)
             case IndexerStrategy.token_scan.value:
-                self.strategy = TokenScanStrategy(strategy_params)
+                self.strategy = TokenScanStrategy(self.indexer, strategy_params)
             case _:
                 raise ValueError(f"Not implemented strategy {strategy} for TransferIndexer. Change strategy in admin")
 
@@ -167,7 +167,7 @@ class BalanceIndexerWorker(AbstractIndexerWorker):
     def build_fetchers(self, tokens: List[Token]):
         self.balance_fetchers = []
         for token in tokens:
-            self.balance_fetchers.append(SimpleBalanceFetcher(self.w3, token))
+            self.balance_fetchers.append(SimpleBalanceFetcher(self.w3, token, self.indexer))
 
     def _cycle_body(self):
         for balance_fetcher in self.balance_fetchers:
@@ -186,4 +186,4 @@ class IndexerWorkerFactory:
             case IndexerType.balance_indexer:
                 return BalanceIndexerWorker(indexer)
             case _:
-                raise NotImplementedError(f"Indexer of type {indexer.type} not impelemting")
+                raise NotImplementedError(f"Indexer of type {indexer.type} not implemented")
