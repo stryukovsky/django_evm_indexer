@@ -1,0 +1,41 @@
+<html lang="en">
+<head>
+    <title>Explorer</title>
+    {% block extrahead %}
+        {% include "admin/evm_indexer.style-template.html" %}
+        {% include "explorer/explorer.style-template.html" %}
+    {% endblock %}
+
+</head>
+<body>
+{% include "explorer/topbar.html" %}
+{% include "explorer/searchbar.html" %}
+<div class="table">
+    <div class="row">
+        {% if latest_transfers %}
+            <div class="column">
+                <h2 class="title centered">Latest transfers</h2>
+                {% for transfer in latest_transfers %}
+                    <div class="transfer">
+                        <a href="/admin/explorer/tx/{{ transfer.tx_hash }}">{{ transfer.tx_hash }}</a>
+                        <small class="quiet">On {{ transfer.token_instance.network.name }}</small>
+                        <p class="address">{{ transfer.sender }} &rarr; {{ transfer.recipient }} </p>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+        {% if metrics %}
+            <div class="column">
+                <h2 class="title centered">Metrics</h2>
+                {% for key, value in metrics.items %}
+                    <p class="title" style="margin-top: 0">{{ key }}: {{ value }}</p>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+    </div>
+
+</div>
+
+</body>
+</html>

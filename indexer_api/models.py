@@ -65,7 +65,7 @@ ERC1155_TOKENS = [TokenType.erc1155]
 
 class Network(models.Model):
     chain_id = models.PositiveBigIntegerField(unique=True)
-    name = models.CharField(max_length=STRING_LENGTH)
+    name = models.CharField(max_length=STRING_LENGTH, unique=True)
     # possibly can store some token in it
     rpc_url = models.CharField(max_length=STRING_LENGTH * 10, validators=[URLValidator(schemes=("http", "https"))],
                                help_text="URL must contain schema (http or https) and port")
@@ -97,7 +97,8 @@ class Indexer(models.Model):
     strategy_params = models.JSONField(verbose_name="Configure indexer's strategy using JSON dict", null=True,
                                        blank=True)
 
-    status = models.CharField(max_length=STRING_LENGTH, choices=IndexerStatus.choices, default=IndexerStatus.off)
+    status = models.CharField(max_length=STRING_LENGTH, choices=IndexerStatus.choices, default=IndexerStatus.off,
+                              help_text="You can change status using Admin Actions on Indexers admin panel")
     type = models.CharField(max_length=STRING_LENGTH, choices=IndexerType.choices, default=IndexerType.transfer_indexer)
 
     def full_clean(self, exclude=None, validate_unique=True, validate_constraints=True):
@@ -220,8 +221,8 @@ class TokenBalance(models.Model):
     holder = models.CharField(max_length=ETHEREUM_ADDRESS_LENGTH, validators=[validate_ethereum_address])
     token_instance = models.ForeignKey(Token, related_name="balances", on_delete=models.CASCADE)
 
-    amount = models.DecimalField(max_digits=INT256_MAX_DIGITS, decimal_places=INT256_DECIMAL_PLACES, null=True)
-    token_id = models.DecimalField(max_digits=INT256_MAX_DIGITS, decimal_places=INT256_DECIMAL_PLACES, null=True)
+    amount = models.DecimalField(max_digits=INT256_MAX_DIGITS, decimal_places=INT256_DECIMAL_PLACES, null=True, blank=True)
+    token_id = models.DecimalField(max_digits=INT256_MAX_DIGITS, decimal_places=INT256_DECIMAL_PLACES, null=True, blank=True)
 
     tracked_by = models.ForeignKey(Indexer, related_name="tracked_balances", on_delete=models.SET_NULL, null=True,
                                    blank=True)

@@ -40,3 +40,19 @@ class IndexerMetrics:
                 for label in dict_metric:
                     result.append(str(key) + "{label=" + str(label) + "} " + str(dict_metric[label]))
         return "\n".join(result)
+
+    def to_django_template_dict(self) -> dict:
+        result = {}
+        metrics = self.__dict__
+        for key in metrics:
+            value = metrics[key]
+            if type(value) is int:
+                result[self._convert_sneak_case_to_normal_text(key)] = value
+            elif type(value) is dict:
+                dict_metric = dict(value)
+                for label in dict_metric:
+                    result[self._convert_sneak_case_to_normal_text(f"{key}_{label}")] = dict_metric[label]
+        return result
+
+    def _convert_sneak_case_to_normal_text(self, value: str) -> str:
+        return value.replace("_", " ").capitalize()

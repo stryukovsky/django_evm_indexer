@@ -1,0 +1,18 @@
+<html lang="en">
+<head>
+    <title>Token {{ token.address }}</title>
+    {% block extrahead %}
+        {% include "admin/evm_indexer.style-template.html" %}
+        {% include "explorer/explorer.style-template.html" %}
+    {% endblock %}
+
+</head>
+<body>
+<div style="margin-left: 50pt">
+
+    <h1 id="site-name">Unfortunately,<br>We found nothing</h1>
+    <a class="title" href="/admin/explorer">Back to explorer</a>
+</div>
+
+</body>
+</html>

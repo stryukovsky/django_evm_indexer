@@ -18,8 +18,11 @@ from django.contrib import admin
 from django.urls import path, include
 
 urlpatterns = [
+    path('admin/explorer/', include("explorer.urls")),
     path('admin/', admin.site.urls),
-    path('indexer_api/', include("indexer_api.urls"))
+    path('indexer_api/', include("indexer_api.urls")),
 ]
 
 admin.site.site_header = "EVM Indexer"
+admin.site.site_url = "/admin/explorer"
+handler404 = "explorer.views.not_found"

@@ -1,0 +1,81 @@
+<html lang="en">
+<head>
+    <title>Transaction {{ tx.tx_hash }}</title>
+    {% block extrahead %}
+        {% include "admin/evm_indexer.style-template.html" %}
+        {% include "explorer/explorer.style-template.html" %}
+    {% endblock %}
+
+</head>
+<body>
+{% include "explorer/topbar.html" %}
+{% include "explorer/searchbar.html" %}
+
+<div class="table">
+    <h1 class="title">Transaction </h1>
+    <h3 class="title">{{ tx.tx_hash }}  {% if tx.token_instance.network.explorer_url %}
+        <a href="{{ tx.token_instance.network.explorer_url }}/tx/{{ tx.tx_hash }}">View</a>{% endif %}</h3>
+    <div class="row">
+        <div class="column">
+            <h2 class="title">Network</h2>
+        </div>
+        <div class="column">
+            <div>
+                <p class="text big-text"> {{ tx.token_instance.network.name }} (Chain
+                    {{ tx.token_instance.network.chain_id }}) </p>
+            </div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="column">
+            <h2 class="title">Token</h2>
+        </div>
+        <div class="column">
+            <div>
+                <p class="text big-text"> {{ tx.token_instance.name }} <span
+                        class="address"> ({{ tx.token_instance.address }})</span><br>
+                    <a href="/admin/explorer/token/{{ tx.token_instance.id }}">EXPLORER</a>
+                    {% if tx.token_instance.network.explorer_url %}
+                        <a href="{{ tx.token_instance.network.explorer_url }}/address/{{ tx.token_instance.address }}">NETWORK</a>{% endif %}
+                </p>
+            </div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="column">
+            <h2 class="title">Type</h2>
+        </div>
+        <div class="column">
+            <div>
+                <p class="text big-text"> {{ tx.token_instance.get_type_display }} </p>
+
+            </div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="column">
+            <h2 class="title">Transfer</h2>
+        </div>
+        <div class="column">
+            <div>
+                <p class="text big-text"> Sent from </p>
+                <p class="address">{{ tx.sender }}
+                    <a href="/admin/explorer/holder/{{ tx.sender }}/">EXPLORER</a>
+                    {% if tx.token_instance.network.explorer_url %}
+                        <a href="{{ tx.token_instance.network.explorer_url }}/address/{{ tx.sender }}">NETWORK</a>{% endif %}
+                </p>
+                <p class="text big-text"> to </p>
+                <p class="address"> {{ tx.recipient }}
+                    <a href="/admin/explorer/holder/{{ tx.recipient }}/">EXPLORER</a>
+                    {% if tx.token_instance.network.explorer_url %}
+                        <a href="{{ tx.token_instance.network.explorer_url }}/address/{{ tx.recipient }}">NETWORK</a>{% endif %}
+                </p>
+                <p class="text big-text">{{ pretty_transfer }}</p>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+</body>
+</html>

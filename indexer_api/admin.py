@@ -142,7 +142,7 @@ class TokenBalanceAdmin(admin.ModelAdmin):
     list_display = ("holder", "token_instance")
 
     search_fields = ("holder",)
-    search_help_text = ("Search by holders address")
+    search_help_text = "Search by holders address"
 
     @admin.display(description="Token type")
     def token_type(self, instance: TokenBalance) -> str:

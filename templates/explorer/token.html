@@ -1,0 +1,81 @@
+<html lang="en">
+<head>
+    <title>Token {{ token.address }}</title>
+    {% block extrahead %}
+        {% include "admin/evm_indexer.style-template.html" %}
+        {% include "explorer/explorer.style-template.html" %}
+    {% endblock %}
+
+</head>
+<body>
+{% include "explorer/topbar.html" %}
+{% include "explorer/searchbar.html" %}
+
+<div class="table">
+    <h1 class="title">Token {{ token.name }}</h1>
+    <h3 class="title">{{ token.address }}  {% if token.network.explorer_url %}
+        <a href="{{ token.network.explorer_url }}/address/{{ token.address }}">View</a>{% endif %}</h3>
+    <div class="row">
+        <div class="column">
+            <h2 class="title">Network</h2>
+        </div>
+        <div class="column">
+            <div>
+                <p class="text big-text"> {{ token.network.name }} (Chain
+                    {{ token.network.chain_id }}) </p>
+            </div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="column">
+            <h2 class="title">Type</h2>
+        </div>
+        <div class="column">
+            <div>
+                <p class="text big-text"> {{ token.get_type_display }} </p>
+
+            </div>
+        </div>
+    </div>
+    {% if token.total_supply %}
+        <div class="row">
+            <div class="column">
+                <h2 class="title">Total supply</h2>
+            </div>
+            <div class="column">
+                <div>
+                    <p class="text big-text"> {{ token.total_supply }} </p>
+
+                </div>
+            </div>
+        </div>
+    {% endif %}
+    {% if token.volume %}
+        <div class="row">
+            <div class="column">
+                <h2 class="title">Total supply</h2>
+            </div>
+            <div class="column">
+                <div>
+                    <p class="text big-text"> {{ token.volume }} </p>
+
+                </div>
+            </div>
+        </div>
+    {% endif %}
+    {% if last_transfers %}
+        <h1 class="title">Last Transfers</h1>
+        {% for transfer in last_transfers %}
+            <div class="row">
+                <div class="column">
+                    <a href="/admin/explorer/tx/{{ transfer.tx_hash }}">{{ transfer.tx_hash }}</a>
+                </div>
+                <div class="column">
+                    <p class="transfer">{{ transfer.sender }} &rarr; {{ transfer.recipient }} </p>
+                </div>
+            </div>
+        {% endfor %}
+    {% endif %}
+</div>
+</body>
+</html>

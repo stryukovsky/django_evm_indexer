@@ -1,0 +1,10 @@
+{% block searchbar %}
+    <div class="centered">
+        <form method="post" action="/admin/explorer/search/">
+            {% csrf_token %}
+            <input style="width: 500pt!important; height: 30pt!important;" type="text" name="query"
+                   placeholder="Search transactions, addresses...">
+            <input style="height: 30pt!important; width: 100pt!important;" type="submit" value="Search">
+        </form>
+    </div>
+{% endblock %}
