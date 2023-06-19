@@ -1,9 +1,6 @@
-from typing import Type
-
 from rest_framework.serializers import ModelSerializer, SerializerMethodField, CharField
-from rest_framework.serializers import IntegerField
 
-from indexer_api.models import Network, Token, TokenBalance, Indexer, TokenTransfer, TokenType, FUNGIBLE_TOKENS, \
+from indexer_api.models import Network, Token, TokenBalance, Indexer, TokenTransfer, FUNGIBLE_TOKENS, \
     NON_FUNGIBLE_TOKENS, ERC1155_TOKENS
 
 
@@ -48,13 +45,13 @@ class TokenTransferSerializer(ModelSerializer):
     @staticmethod
     def get_token_transferred(instance: TokenTransfer):
         token_type = instance.token_instance.type
-        result = {"token_type": token_type, }
+        result = {"type": token_type, "token": instance.token_instance.address}
         if token_type in FUNGIBLE_TOKENS:
-            result["amount"] = int(instance.amount)
+            result["amount"] = str(instance.amount)
 
         elif token_type in NON_FUNGIBLE_TOKENS:
-            result["token_id"] = int(instance.token_id)
+            result["token_id"] = str(instance.token_id)
         elif token_type in ERC1155_TOKENS:
-            result["amount"] = int(instance.amount)
-            result["token_id"] = int(instance.token_id)
+            result["amount"] = str(instance.amount)
+            result["token_id"] = str(instance.token_id)
         return result

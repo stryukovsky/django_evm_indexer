@@ -8,7 +8,6 @@ from rest_framework.viewsets import ReadOnlyModelViewSet
 
 from indexer_api.models import Network, Token, Indexer, TokenBalance, TokenType, TokenTransfer
 from indexer_api.serializers import NetworkSerializer, TokenSerializer, IndexerSerializer, TokenTransferSerializer
-from django_filters import rest_framework as filters
 
 
 @method_decorator(name='list', decorator=swagger_auto_schema(
@@ -144,4 +143,6 @@ class BalancesView(APIView):
 class TransfersViewSet(ReadOnlyModelViewSet):
     queryset = TokenTransfer.objects.all()
     serializer_class = TokenTransferSerializer
-    filterset_fields = ('sender', 'recipient', 'tx_hash', 'token_instance')
+    search_fields = ('sender', 'recipient', 'token_instance__address')
+
+    lookup_field = "tx_hash"

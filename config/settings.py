@@ -37,7 +37,6 @@ INSTALLED_APPS = [
     'rest_framework',
     'indexer_api',
     'prettyjson',
-    'django_filters',
     'drf_yasg',
 ]
 
