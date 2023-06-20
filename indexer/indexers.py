@@ -21,7 +21,7 @@ from indexer_api.models import (
     Token,
     Indexer, IndexerType)
 from indexer_api.models import TokenStrategy, IndexerStrategy
-from .transfer_fetchers import EventTransferFetched, AbstractTransferFetcher
+from .transfer_fetchers import EventTransferFetcher, AbstractTransferFetcher
 from .transfer_transactions import TransferTransaction
 
 logger = getLogger(__name__)
@@ -130,7 +130,7 @@ class TransferIndexerWorker(AbstractIndexerWorker):
         for token in tokens:
             match token.strategy:
                 case TokenStrategy.event_based_transfer.value:
-                    self.transfer_fetchers.append(EventTransferFetched(self.w3, token, self.network.type))
+                    self.transfer_fetchers.append(EventTransferFetcher(self.w3, token, self.network.type))
                 case TokenStrategy.receipt_based_transfer.value:
                     self.transfer_fetchers.append(ReceiptTransferFetcher(self.w3, token))
                 case _:

@@ -1,0 +1,33 @@
+<html lang="en">
+<head>
+    <title>Network {{ network.name }}</title>
+    {% block extrahead %}
+        {% include "admin/evm_indexer.style-template.html" %}
+        {% include "explorer/explorer.style-template.html" %}
+    {% endblock %}
+</head>
+<body>
+{% include "explorer/topbar.html" %}
+{% include "explorer/searchbar.html" %}
+<div class="table">
+    <h1 class="title">Search results</h1>
+    <h3 class="text">{{ query }}</h3>
+    <h1 class="title">Found tokens</h1>
+    {% for token in results %}
+        <div class="row">
+            <div class="column"><p class="title">
+                <a href="{% url 'explorer_token' token_id=token.id %}">{{ token.address }}</a>
+
+            </p>
+            </div>
+            <div class="column centered">
+                <p class="title">{{ token.name }}</p>
+            </div>
+            <div class="column centered">
+                <p class="title">{{ token.network.name }}</p>
+            </div>
+        </div>
+    {% endfor %}
+</div>
+</body>
+</html>

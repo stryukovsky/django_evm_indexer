@@ -4,14 +4,15 @@ from django.shortcuts import render, get_object_or_404, redirect
 
 from indexer_api.balances import Balances
 from indexer_api.metrics import IndexerMetrics
-from indexer_api.models import TokenTransfer, TokenType, Token, TokenBalance
+from indexer_api.models import TokenTransfer, TokenType, Token, TokenBalance, Network
 from indexer_api.validators import is_ethereum_address_valid
 
 
 def index(request: HttpRequest) -> HttpResponse:
     context = {
-        "latest_transfers": TokenTransfer.objects.order_by("-id").all()[:10],
-        "metrics": IndexerMetrics().to_django_template_dict()
+        "last_transfers": TokenTransfer.objects.order_by("-id").all()[:10],
+        "metrics": IndexerMetrics().to_django_template_dict(),
+        "networks": Network.objects.all(),
     }
     return render(request, "explorer/explorer.html", context)
 
@@ -60,6 +61,16 @@ def holder(request: HttpRequest, address: str) -> HttpResponse:
     return render(request, "explorer/holder.html", context=context)
 
 
+def network(request: HttpRequest, chain_id: int) -> HttpResponse:
+    network_instance = get_object_or_404(Network, chain_id=chain_id)
+    last_transfers = TokenTransfer.objects.filter(token_instance__network=network_instance).order_by("-id").all()[:10]
+    context = {
+        "network": network_instance,
+        "last_transfers": last_transfers,
+    }
+    return render(request, "explorer/network.html", context=context)
+
+
 def search(request: HttpRequest) -> HttpResponse:
     if request.method != "POST":
         return redirect("/admin/explorer/")
@@ -68,10 +79,16 @@ def search(request: HttpRequest) -> HttpResponse:
     query = str(query).strip()
     if transfer := TokenTransfer.objects.filter(tx_hash__iexact=query).first():
         return redirect(f"/admin/explorer/tx/{transfer.tx_hash}/")
-    if token_instance := Token.objects.filter(address__iexact=query).first():
-        return redirect(f"/admin/explorer/token/{token_instance.id}/")
-    if token_instance := Token.objects.filter(name__iexact=query).first():
-        return redirect(f"/admin/explorer/token/{token_instance.id}/")
+    if token_instances := Token.objects.filter(address__iexact=query).all():
+        if len(token_instances) == 1:
+            return redirect(f"/admin/explorer/token/{token_instances[0].id}/")
+        else:
+            return render(request, "explorer/search_results.html", context={"query": query, "results": token_instances})
+    if token_instances := Token.objects.filter(name__iexact=query).all():
+        if len(token_instances) == 1:
+            return redirect(f"/admin/explorer/token/{token_instances[0].id}/")
+        else:
+            return render(request, "explorer/search_results.html", context={"query": query, "results": token_instances})
     if is_ethereum_address_valid(query):
         return redirect(f"/admin/explorer/holder/{query}/")
     else:

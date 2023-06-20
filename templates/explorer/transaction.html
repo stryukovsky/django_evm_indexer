@@ -34,7 +34,7 @@
             <div>
                 <p class="text big-text"> {{ tx.token_instance.name }} <span
                         class="address"> ({{ tx.token_instance.address }})</span><br>
-                    <a href="/admin/explorer/token/{{ tx.token_instance.id }}">EXPLORER</a>
+                    <a href="{% url 'explorer_token' token_id=tx.token_instance.id %}">EXPLORER</a>
                     {% if tx.token_instance.network.explorer_url %}
                         <a href="{{ tx.token_instance.network.explorer_url }}/address/{{ tx.token_instance.address }}">NETWORK</a>{% endif %}
                 </p>
@@ -60,13 +60,13 @@
             <div>
                 <p class="text big-text"> Sent from </p>
                 <p class="address">{{ tx.sender }}
-                    <a href="/admin/explorer/holder/{{ tx.sender }}/">EXPLORER</a>
+                    <a href="{% url 'explorer_holder' address=tx.sender %}">EXPLORER</a>
                     {% if tx.token_instance.network.explorer_url %}
                         <a href="{{ tx.token_instance.network.explorer_url }}/address/{{ tx.sender }}">NETWORK</a>{% endif %}
                 </p>
                 <p class="text big-text"> to </p>
                 <p class="address"> {{ tx.recipient }}
-                    <a href="/admin/explorer/holder/{{ tx.recipient }}/">EXPLORER</a>
+                    <a href="{% url 'explorer_holder' address=tx.recipient %}">EXPLORER</a>
                     {% if tx.token_instance.network.explorer_url %}
                         <a href="{{ tx.token_instance.network.explorer_url }}/address/{{ tx.recipient }}">NETWORK</a>{% endif %}
                 </p>

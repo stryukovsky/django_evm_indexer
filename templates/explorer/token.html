@@ -13,8 +13,11 @@
 
 <div class="table">
     <h1 class="title">Token {{ token.name }}</h1>
-    <h3 class="title">{{ token.address }}  {% if token.network.explorer_url %}
-        <a href="{{ token.network.explorer_url }}/address/{{ token.address }}">View</a>{% endif %}</h3>
+    <h3 class="title">{% if token.address %} {{ token.address }} {% else %} Network's native token {% endif %}
+        {% if token.network.explorer_url and token.address %}
+            <a href="{{ token.network.explorer_url }}/address/{{ token.address }}">View</a>
+        {% endif %}
+    </h3>
     <div class="row">
         <div class="column">
             <h2 class="title">Network</h2>
@@ -68,7 +71,7 @@
         {% for transfer in last_transfers %}
             <div class="row">
                 <div class="column">
-                    <a href="/admin/explorer/tx/{{ transfer.tx_hash }}">{{ transfer.tx_hash }}</a>
+                    <a href="{% url 'explorer_tx' tx=transfer.tx_hash %}">{{ transfer.tx_hash }}</a>
                 </div>
                 <div class="column">
                     <p class="transfer">{{ transfer.sender }} &rarr; {{ transfer.recipient }} </p>

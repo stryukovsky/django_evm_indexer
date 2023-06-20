@@ -1,0 +1,38 @@
+<html lang="en">
+<head>
+    <title>Network {{ network.name }}</title>
+    {% block extrahead %}
+        {% include "admin/evm_indexer.style-template.html" %}
+        {% include "explorer/explorer.style-template.html" %}
+    {% endblock %}
+</head>
+<body>
+{% include "explorer/topbar.html" %}
+{% include "explorer/searchbar.html" %}
+<div class="table">
+    <h1 class="title">Network {{ network.name }}</h1>
+    <h3 class="text">Chain ID {{ network.chain_id }}</h3>
+    <div class="row">
+        <div class="column" style="flex: 70%">
+            <h1 class="title">Latest transfers</h1>
+            {% for transfer in last_transfers %}
+                <div class="transfer">
+                    <a href="/admin/explorer/tx/{{ transfer.tx_hash }}">{{ transfer.shorten_tx_hash }}</a>
+                    <small class="quiet">Token {{ transfer.token_instance.name }}</small>
+                    <p class="address">{{ transfer.sender }} &rarr; {{ transfer.recipient }} </p>
+
+                </div>
+            {% endfor %}
+        </div>
+        <div class="column" style="flex: 30%">
+            <h1 class="title">Tracked tokens</h1>
+            {% for token in network.tokens.all %}
+                <h3 ><a class="title" href="{% url 'explorer_token' token_id=token.id %}"> {{ token.name }}</a>
+
+                </h3>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+</body>
+</html>

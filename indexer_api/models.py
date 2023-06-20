@@ -221,8 +221,10 @@ class TokenBalance(models.Model):
     holder = models.CharField(max_length=ETHEREUM_ADDRESS_LENGTH, validators=[validate_ethereum_address])
     token_instance = models.ForeignKey(Token, related_name="balances", on_delete=models.CASCADE)
 
-    amount = models.DecimalField(max_digits=INT256_MAX_DIGITS, decimal_places=INT256_DECIMAL_PLACES, null=True, blank=True)
-    token_id = models.DecimalField(max_digits=INT256_MAX_DIGITS, decimal_places=INT256_DECIMAL_PLACES, null=True, blank=True)
+    amount = models.DecimalField(max_digits=INT256_MAX_DIGITS, decimal_places=INT256_DECIMAL_PLACES, null=True,
+                                 blank=True)
+    token_id = models.DecimalField(max_digits=INT256_MAX_DIGITS, decimal_places=INT256_DECIMAL_PLACES, null=True,
+                                   blank=True)
 
     tracked_by = models.ForeignKey(Indexer, related_name="tracked_balances", on_delete=models.SET_NULL, null=True,
                                    blank=True)
@@ -252,4 +254,18 @@ class TokenTransfer(models.Model):
         verbose_name = "Transfer"
 
     def __str__(self):
-        return f"{self.token_instance.name} transfer {self.sender} → {self.recipient}"
+        return f"{self.token_instance.name} transfer {self.shorten_sender()} → {self.shorten_recipient()} ({self.shorten_tx_hash()})"
+
+    def _shorten(self, value: str) -> str:
+        if len(value) < 20:
+            return value
+        return f"{value[: 9]}...{value[-7:]}"
+
+    def shorten_tx_hash(self) -> str:
+        return self._shorten(self.tx_hash)
+
+    def shorten_sender(self) -> str:
+        return self._shorten(self.sender)
+
+    def shorten_recipient(self) -> str:
+        return self._shorten(self.recipient)
