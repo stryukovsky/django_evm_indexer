@@ -4,7 +4,7 @@ from typing import List, Callable, Type, Dict, Sequence
 from logging import getLogger
 from web3 import Web3
 from web3.contract import Contract
-from web3.contract.base_contract import BaseContractEvent
+from web3.contract.contract import ContractEvent
 from web3.types import TxReceipt, TxParams
 
 from indexer.transfer_transactions import (TransferTransaction,
@@ -30,9 +30,9 @@ class AbstractTransferFetcher(abc.ABC):
         pass
 
 
-class EventTransferFetched(AbstractTransferFetcher):
+class EventTransferFetcher(AbstractTransferFetcher):
     contract: Contract
-    event: List[Type[BaseContractEvent]]
+    event: List[Type[ContractEvent]]
     get_events_function: Callable[[int, int], List[TransferTransaction]]
     token_action_type: Type[TransferTransaction]
     network_type: str
@@ -91,6 +91,7 @@ class EventTransferFetched(AbstractTransferFetcher):
     def __get_events_with_eth_filter(self, from_block: int, to_block: int) -> List[TransferTransaction]:
         result = []
         for event in self.events:
+            # noinspection PyUnresolvedReferences
             entries = event.create_filter(fromBlock=from_block, toBlock=to_block).get_all_entries()
             for entry in entries:
                 token_actions = self.token_action_type.from_event_entry(entry)

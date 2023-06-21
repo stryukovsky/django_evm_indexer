@@ -1,10 +1,11 @@
-from rest_framework.routers import SimpleRouter, Route, DynamicRoute
+from django.urls import path, re_path
+from drf_yasg import openapi
+from drf_yasg.views import get_schema_view
+from rest_framework import permissions
+from rest_framework.routers import SimpleRouter
+
 from indexer_api.views import NetworkViewSet, TokenViewSet, IndexerViewSet, BalancesView, TransfersViewSet, \
     IndexerMetricsView
-from django.urls import path, re_path
-from drf_yasg.views import get_schema_view
-from drf_yasg import openapi
-from rest_framework import permissions
 
 router = SimpleRouter()
 router.register("networks", NetworkViewSet)

@@ -1,8 +1,8 @@
-from django.test import TestCase
-from indexer_api.models import Network, Token, TokenBalance, TokenTransfer, Indexer
-from indexer_api.models import NetworkType, TokenStrategy
 from django.db.utils import IntegrityError
-from django.core.exceptions import ValidationError
+from django.test import TestCase
+
+from indexer_api.models import Network, Token
+from indexer_api.models import NetworkType, TokenStrategy
 
 
 class NetworkTestCase(TestCase):

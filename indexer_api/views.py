@@ -1,4 +1,4 @@
-from django.db.models import QuerySet
+from django.http.response import HttpResponse
 from django.http.response import HttpResponse
 from django.utils.decorators import method_decorator
 from drf_yasg.utils import swagger_auto_schema
@@ -9,7 +9,7 @@ from rest_framework.viewsets import ReadOnlyModelViewSet
 
 from indexer_api.balances import Balances
 from indexer_api.metrics import IndexerMetrics
-from indexer_api.models import Network, Token, Indexer, TokenBalance, TokenType, TokenTransfer
+from indexer_api.models import Network, Token, Indexer, TokenTransfer
 from indexer_api.serializers import NetworkSerializer, TokenSerializer, IndexerSerializer, TokenTransferSerializer
 
 
