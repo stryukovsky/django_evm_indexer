@@ -4,8 +4,10 @@ from django.shortcuts import render, get_object_or_404, redirect
 
 from indexer_api.balances import Balances
 from indexer_api.metrics import IndexerMetrics
-from indexer_api.models import TokenTransfer, TokenType, Token, TokenBalance, Network
+from indexer_api.models import TokenTransfer, TokenType, Token, Network
 from indexer_api.validators import is_ethereum_address_valid
+from django import forms
+from django.db.models import QuerySet
 
 
 def index(request: HttpRequest) -> HttpResponse:
@@ -71,29 +73,33 @@ def network(request: HttpRequest, chain_id: int) -> HttpResponse:
     return render(request, "explorer/network.html", context=context)
 
 
+class SearchForm(forms.Form):
+    query = forms.CharField()
+
+
+def _token_search(request: HttpRequest, query: str, token_instances: QuerySet[Token]) -> HttpResponse:
+    if len(token_instances) == 1:
+        return redirect(f"/admin/explorer/token/{token_instances[0].id}/")
+    else:
+        return render(request, "explorer/search_results.html", context={"query": query, "results": token_instances})
+
+
 def search(request: HttpRequest) -> HttpResponse:
-    if request.method != "POST":
+    form = SearchForm(request.GET)
+    if not form.is_valid():
         return redirect("/admin/explorer/")
-    if not (query := request.POST.get("query")):
-        return redirect("/admin/explorer/")
-    query = str(query).strip()
+    query = str(form.cleaned_data["query"]).strip()
     if transfer := TokenTransfer.objects.filter(tx_hash__iexact=query).first():
         return redirect(f"/admin/explorer/tx/{transfer.tx_hash}/")
     if token_instances := Token.objects.filter(address__iexact=query).all():
-        if len(token_instances) == 1:
-            return redirect(f"/admin/explorer/token/{token_instances[0].id}/")
-        else:
-            return render(request, "explorer/search_results.html", context={"query": query, "results": token_instances})
+        return _token_search(request, query, token_instances)
     if token_instances := Token.objects.filter(name__iexact=query).all():
-        if len(token_instances) == 1:
-            return redirect(f"/admin/explorer/token/{token_instances[0].id}/")
-        else:
-            return render(request, "explorer/search_results.html", context={"query": query, "results": token_instances})
+        return _token_search(request, query, token_instances)
     if is_ethereum_address_valid(query):
         return redirect(f"/admin/explorer/holder/{query}/")
     else:
         return render(request, "explorer/not_found.html")
 
 
-def not_found(request: HttpRequest, exception: Exception) -> HttpResponse:
+def not_found(request: HttpRequest, _: Exception) -> HttpResponse:
     return render(request, "explorer/not_found.html")
