@@ -70,11 +70,12 @@
         <h1 class="title">Last Transfers</h1>
         {% for transfer in last_transfers %}
             <div class="row">
-                <div class="column">
+                <div class="column" style="align-self: center;">
                     <a href="{% url 'explorer_tx' tx=transfer.tx_hash %}">{{ transfer.tx_hash }}</a>
                 </div>
                 <div class="column">
-                    <p class="transfer">{{ transfer.sender }} &rarr; {{ transfer.recipient }} </p>
+                    <small class="quiet">Token {{ transfer.token_instance.name }}</small>
+                    <p class="transfer" style="margin-bottom: 0">{{ transfer.sender }} &rarr; {{ transfer.recipient }} </p>
                 </div>
             </div>
         {% endfor %}
