@@ -1,5 +1,4 @@
 from django.http.response import HttpResponse
-from django.http.response import HttpResponse
 from django.utils.decorators import method_decorator
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework.request import Request

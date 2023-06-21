@@ -4,6 +4,7 @@ from logging import getLogger
 from typing import List, Dict
 
 from web3.types import ChecksumAddress
+from web3 import Web3
 
 from indexer_api.models import Token, TokenTransfer, Indexer
 from .transfer_transactions import TransferTransaction
@@ -45,11 +46,12 @@ class RecipientStrategy(AbstractTransferStrategy):
     def start(self, token: Token, transfer_transactions: List[TransferTransaction]):
         if not (recipient := self.strategy_params.get("recipient")):
             raise ValueError("Strategy has no recipient provided. Please add recipient address to the strategy dict")
-        transfers_with_recipient = list(
-            filter(lambda tx: tx.recipient.lower() == recipient.lower(), transfer_transactions))
-        logger.info(f"Found {len(transfers_with_recipient)} transfers of {token.name} with recipient {recipient}")
-        for transfer_transaction in transfers_with_recipient:
-            self._save_transfer_to_database(token, transfer_transaction)
+        transfers_found = 0
+        for transfer_transaction in transfer_transactions:
+            if transfer_transaction.recipient.lower() == recipient.lower():
+                self._save_transfer_to_database(token, transfer_transaction)
+                transfers_found += 1
+        logger.info(f"Found {transfers_found} transfers of {token.name} with recipient {recipient}")
         logger.info(f"Saved transfers to database")
 
 
@@ -58,10 +60,12 @@ class SenderStrategy(AbstractTransferStrategy):
     def start(self, token: Token, transfer_transactions: List[TransferTransaction]):
         if not (sender := self.strategy_params.get("sender")):
             raise ValueError("Strategy has no sender provided. Please add sender address to the strategy dict")
-        transfers_with_sender = list(filter(lambda tx: tx.sender.lower() == sender.lower(), transfer_transactions))
-        logger.info(f"Found {len(transfers_with_sender)} transfers of {token.name} with sender {sender}")
-        for transfer_transaction in transfers_with_sender:
-            self._save_transfer_to_database(token, transfer_transaction)
+        transfers_found = 0
+        for transfer_transaction in transfer_transactions:
+            if transfer_transaction.sender.lower() == sender.lower():
+                self._save_transfer_to_database(token, transfer_transaction)
+                transfers_found += 1
+        logger.info(f"Found {transfers_found} transfers of {token.name} with sender {sender}")
         logger.info(f"Saved transfers to database")
 
 
@@ -99,4 +103,4 @@ class TransfersParticipantsStrategy(AbstractBalanceStrategy):
             result.add(pair["sender"])
             result.add(pair["recipient"])
         logger.info(f"Found {len(result)} token transfer participants. Find their balances")
-        return list(result)
+        return list(map(lambda address: Web3.to_checksum_address(address), result))

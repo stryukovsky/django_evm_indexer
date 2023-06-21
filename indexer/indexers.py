@@ -16,6 +16,7 @@ from indexer.strategies import (RecipientStrategy,
                                 AbstractBalanceStrategy,
                                 TransfersParticipantsStrategy)
 from indexer.transfer_fetchers import ReceiptTransferFetcher
+from django.db.models import QuerySet
 from indexer_api.models import (
     Network,
     Token,
@@ -58,7 +59,7 @@ class AbstractIndexerWorker(abc.ABC):
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def build_fetchers(self, tokens: List[Token]):
+    def build_fetchers(self, tokens: QuerySet[Token]):
         raise NotImplementedError()
 
 
@@ -125,7 +126,7 @@ class TransferIndexerWorker(AbstractIndexerWorker):
             logger.warning(f"During handling fetched transfers ({fetching_method}) error occurred {e}")
             return False
 
-    def build_fetchers(self, tokens: List[Token]):
+    def build_fetchers(self, tokens: QuerySet[Token]):
         self.transfer_fetchers = []
         for token in tokens:
             match token.strategy:
@@ -164,7 +165,7 @@ class BalanceIndexerWorker(AbstractIndexerWorker):
             case IndexerStrategy.transfers_participants.value:
                 self.strategy = TransfersParticipantsStrategy(strategy_params)
 
-    def build_fetchers(self, tokens: List[Token]):
+    def build_fetchers(self, tokens: QuerySet[Token]):
         self.balance_fetchers = []
         for token in tokens:
             self.balance_fetchers.append(SimpleBalanceFetcher(self.w3, token, self.indexer))

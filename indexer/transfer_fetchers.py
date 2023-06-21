@@ -1,16 +1,16 @@
 import abc
 import json
-from typing import List, Callable, Type, Dict, Sequence
+from typing import List, Callable, Type, Dict, Sequence, Union, cast
 from logging import getLogger
 from web3 import Web3
 from web3.contract import Contract
 from web3.contract.contract import ContractEvent
-from web3.types import TxReceipt, TxParams
+from web3.types import TxData, HexStr, TxReceipt, HexBytes
 
 from indexer.transfer_transactions import (TransferTransaction,
                                            FungibleTransferTransaction,
                                            NonFungibleTransferTransaction,
-                                           ERC1155TokenTransfer,
+                                           ERC1155TransferTransaction,
                                            NativeCurrencyTransferTransaction)
 from indexer_api.models import Token, NetworkType, FUNGIBLE_TOKENS, NON_FUNGIBLE_TOKENS, ERC1155_TOKENS, TokenType
 
@@ -32,7 +32,7 @@ class AbstractTransferFetcher(abc.ABC):
 
 class EventTransferFetcher(AbstractTransferFetcher):
     contract: Contract
-    event: List[Type[ContractEvent]]
+    events: List[ContractEvent]
     get_events_function: Callable[[int, int], List[TransferTransaction]]
     token_action_type: Type[TransferTransaction]
     network_type: str
@@ -41,8 +41,10 @@ class EventTransferFetcher(AbstractTransferFetcher):
         super().__init__(w3, token)
         abi = self._get_abi(token.type)
         address = token.address
+        if not address:
+            raise ValueError(f"Cannot fetch events on native token. Use Receipt strategy instead")
         self.contract = self.w3.eth.contract(address=w3.to_checksum_address(address), abi=abi)
-        self.events = list(map(lambda event_name: self.contract.events[event_name], self._get_event_names(token.type)))
+        self.events = list(map(lambda event_name: cast(ContractEvent, self.contract.events[event_name]), self._get_event_names(token.type)))
         self.network_type = network_type
         self.token_action_type = self._get_transfer_transaction_type(token.type)
 
@@ -77,7 +79,9 @@ class EventTransferFetcher(AbstractTransferFetcher):
         if token_type in NON_FUNGIBLE_TOKENS:
             return NonFungibleTransferTransaction
         if token_type in ERC1155_TOKENS:
-            return ERC1155TokenTransfer
+            return ERC1155TransferTransaction
+        else:
+            raise NotImplementedError(f"Bad token type {token_type}")
 
     def get_transfers(self, from_block: int, to_block: int) -> List[TransferTransaction]:
         match self.network_type:
@@ -91,7 +95,6 @@ class EventTransferFetcher(AbstractTransferFetcher):
     def __get_events_with_eth_filter(self, from_block: int, to_block: int) -> List[TransferTransaction]:
         result = []
         for event in self.events:
-            # noinspection PyUnresolvedReferences
             entries = event.create_filter(fromBlock=from_block, toBlock=to_block).get_all_entries()
             for entry in entries:
                 token_actions = self.token_action_type.from_event_entry(entry)
@@ -113,11 +116,11 @@ class EventTransferFetcher(AbstractTransferFetcher):
 
 class ReceiptTransferFetcher(AbstractTransferFetcher):
     def get_transfers(self, from_block: int, to_block: int) -> List[TransferTransaction]:
-        token_actions = []
+        token_actions: List[TransferTransaction] = []
         for block_number in range(from_block, to_block + 1):
             block = self.w3.eth.get_block(block_number, full_transactions=True)
             logger.info(f"Taking receipts of block {block_number}")
-            transactions: Sequence[TxParams] = block["transactions"]
+            transactions = cast(Sequence[TxData], block["transactions"])
             for transaction in transactions:
                 try:
                     receipt: TxReceipt = self.w3.eth.get_transaction_receipt(transaction_hash=transaction["hash"])
@@ -125,7 +128,7 @@ class ReceiptTransferFetcher(AbstractTransferFetcher):
                         token_actions.append(
                             NativeCurrencyTransferTransaction(sender=receipt["from"], recipient=receipt["to"],
                                                               amount=transaction["value"],
-                                                              tx_hash=transaction["hash"].hex()))
+                                                              tx_hash=HexStr(transaction["hash"].hex())))
                         logger.info(f"Transaction {transaction['hash'].hex()} is added to list")
                     else:
                         logger.info(f"Transaction {transaction['hash'].hex()} is either failed or transfers no native")

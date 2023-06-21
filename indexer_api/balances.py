@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Dict, Union, List
 
 from django.db.models import QuerySet
 
@@ -44,9 +44,9 @@ class Balances:
     @staticmethod
     def get_balances(holder: str, verbose: bool = False) -> Dict:
         networks = Network.objects.all()
-        result = {}
+        result: Dict[Union[str, int], Dict] = {}
         for network in networks:
-            network_identifier = network.chain_id
+            network_identifier: Union[str, int] = network.chain_id
             if verbose:
                 network_identifier = network.name
             result[network_identifier] = {}
@@ -55,6 +55,7 @@ class Balances:
                 balances = TokenBalance.objects.filter(token_instance=token, holder__iexact=holder).values("token_id",
                                                                                                            "amount")
                 token_type = token.type
+                value: Union[str, List[str], Dict[str, str]]
                 match token_type:
                     case TokenType.erc721enumerable:
                         value = Balances.get_nft_ids(balances)

@@ -1,6 +1,7 @@
 import abc
 from logging import getLogger
-from typing import List
+from typing import List, Optional
+from decimal import Decimal
 
 from web3.contract import Contract
 from web3.types import ChecksumAddress
@@ -10,10 +11,10 @@ logger = getLogger(__name__)
 
 
 class AbstractBalanceCaller(abc.ABC):
-    contract: Contract
+    contract: Optional[Contract]
     token: Token
 
-    def __init__(self, token: Token, contract: Contract):
+    def __init__(self, token: Token, contract: Optional[Contract]):
         self.contract = contract
         self.token = token
 
@@ -22,7 +23,16 @@ class AbstractBalanceCaller(abc.ABC):
         raise NotImplementedError()
 
 
-class ERC20BalanceCaller(AbstractBalanceCaller):
+class ContractBalanceFetcher(AbstractBalanceCaller, abc.ABC):
+    contract: Contract
+
+    def __init__(self, token: Token, contract: Optional[Contract]):
+        if not contract:
+            raise ValueError(f"ERC20BalanceCaller needs contract, not native currency")
+        super().__init__(token, contract)
+
+
+class ERC20BalanceCaller(ContractBalanceFetcher):
 
     def get_balance(self, holder: ChecksumAddress) -> List[TokenBalance]:
         try:
@@ -45,7 +55,7 @@ class ERC20BalanceCaller(AbstractBalanceCaller):
             return []
 
 
-class ERC721BalanceCaller(AbstractBalanceCaller):
+class ERC721BalanceCaller(ContractBalanceFetcher):
 
     def get_balance(self, holder: ChecksumAddress) -> List[TokenBalance]:
         try:
@@ -68,7 +78,7 @@ class ERC721BalanceCaller(AbstractBalanceCaller):
             return []
 
 
-class ERC721EnumerableBalanceCaller(AbstractBalanceCaller):
+class ERC721EnumerableBalanceCaller(ContractBalanceFetcher):
 
     def get_balance(self, holder: ChecksumAddress) -> List[TokenBalance]:
         try:
@@ -76,24 +86,28 @@ class ERC721EnumerableBalanceCaller(AbstractBalanceCaller):
             current_tokens = set()
             tokens_already_held_queryset = TokenBalance.objects.filter(holder=holder, token_instance=self.token).values(
                 "token_id")
-            tokens_already_held = set(map(lambda token: int(token['token_id']), tokens_already_held_queryset))
+            tokens_already_held = set()
+            for token_balance in tokens_already_held_queryset:
+                if token_id_already_held := token_balance.get("token_id"):
+                    tokens_already_held.add(int(token_id_already_held))
             for i in range(users_tokens_count):
-                token_id = self.contract.functions.tokenOfOwnerByIndex(holder, i).call()
-                current_tokens.add(token_id)
+                token_id_already_held = self.contract.functions.tokenOfOwnerByIndex(holder, i).call()
+                current_tokens.add(token_id_already_held)
             logger.info(f"Fetched {current_tokens} of holder {holder} on token {self.token.address}")
             tokens_to_be_removed = tokens_already_held.difference(current_tokens)
             tokens_to_be_added = current_tokens.difference(tokens_already_held)
             if not tokens_to_be_added and not tokens_to_be_added:
                 logger.info(f"Skipped {holder} balance of token {self.token.address} remains to be {current_tokens}")
                 return []
-            for token_id in tokens_to_be_removed:
-                logger.info(f"Token {token_id} was moved from {holder}. Delete a record in the database")
-                TokenBalance.objects.filter(holder=holder, token_instance=self.token, token_id=token_id).delete()
-            for token_id in tokens_to_be_added:
-                logger.info(f"Token {token_id} was given to {holder}. Create a record in the database")
+            for token_id_to_be_removed in tokens_to_be_removed:
+                logger.info(f"Token {token_id_to_be_removed} was moved from {holder}. Delete a record in the database")
+                TokenBalance.objects.filter(holder=holder, token_instance=self.token,
+                                            token_id=Decimal(token_id_to_be_removed)).delete()
+            for token_id_to_be_added in tokens_to_be_added:
+                logger.info(f"Token {token_id_to_be_added} was given to {holder}. Create a record in the database")
                 TokenBalance.objects.create(holder=holder,
                                             token_instance=self.token,
-                                            token_id=token_id,
+                                            token_id=token_id_to_be_added,
                                             amount=None)
             return []
         except Exception as e:

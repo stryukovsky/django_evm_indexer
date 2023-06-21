@@ -1,11 +1,12 @@
 import os
-from typing import Type, Optional, List
+from typing import Type, Optional, List, cast, Sequence, Union
 
 from django.contrib import admin, messages
 from django.contrib.admin import register
 from django.db.models import QuerySet
 from django.forms import ModelForm
-from django.utils.html import format_html, mark_safe
+from django.utils.html import format_html
+from django.utils.safestring import mark_safe
 from docker import DockerClient
 from docker import from_env
 from prettyjson import PrettyJSONWidget
@@ -52,7 +53,7 @@ class NetworkAdmin(admin.ModelAdmin):
 
 
 @admin.action(description="Create containers")
-def create_containers(model_admin: Type["IndexerAdmin"], request, queryset: QuerySet[Indexer]):
+def create_containers(model_admin: admin.ModelAdmin, request, queryset: QuerySet[Indexer]):
     for indexer in queryset:
         try:
             client_keeper.get_instance().containers.run("django_evm_indexer",
@@ -70,7 +71,7 @@ def create_containers(model_admin: Type["IndexerAdmin"], request, queryset: Quer
 
 
 @admin.action(description="Restart containers")
-def restart_containers(model_admin: Type["IndexerAdmin"], request, queryset: QuerySet[Indexer]):
+def restart_containers(model_admin: admin.ModelAdmin, request, queryset: QuerySet[Indexer]):
     for indexer in queryset:
         try:
             container = client_keeper.get_instance().containers.get(indexer.name)
@@ -91,7 +92,7 @@ def restart_containers(model_admin: Type["IndexerAdmin"], request, queryset: Que
 
 
 @admin.action(description="Remove containers")
-def remove_containers(model_admin: Type["IndexerAdmin"], request, queryset: QuerySet[Indexer]):
+def remove_containers(model_admin: admin.ModelAdmin, request, queryset: QuerySet[Indexer]):
     for indexer in queryset:
         try:
             container = client_keeper.get_instance().containers.get(indexer.name)
@@ -168,16 +169,20 @@ class TokenTransferAdmin(admin.ModelAdmin):
         else:
             return f"{instance.tx_hash}"
 
-    def get_fieldsets(self, request, obj: TokenTransfer = None):
+    def get_fieldsets(self, request, obj: Optional[TokenTransfer] = None):
         fieldsets = super(TokenTransferAdmin, self).get_fieldsets(request, obj)
+        if not obj:
+            return fieldsets
         fields = fieldsets[0][1]['fields']
-        try:
-            if obj.token_instance.type in FUNGIBLE_TOKENS:
-                del fields[fields.index("token_id")]
-            elif obj.token_instance.type in NON_FUNGIBLE_TOKENS:
-                del fields[fields.index("amount")]
-        except Exception as e:
-            logger.warning(f"Error in admin panel during TokenTransfer instance render {e}")
+        token: Token = cast(Token, obj.token_instance)
+        token_type = token.type
+        new_fields: List[Union[str, Sequence[str]]] = []
+        for field in fields:
+            if token_type in FUNGIBLE_TOKENS and field != "token_id":
+                new_fields.append(field)
+            if token_type in NON_FUNGIBLE_TOKENS and field != "amount":
+                new_fields.append(field)
+        fieldsets[0][1]['fields'] = new_fields
         return fieldsets
 
 

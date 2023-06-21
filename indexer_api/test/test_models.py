@@ -17,14 +17,14 @@ class NetworkTestCase(TestCase):
 
     def test_cannot_create_two_networks_with_same_chain_id(self):
         try:
-            Network.objects.create(chain_id=self.chain_id, name="Test network", rpc_url="url://second_url_in_pool",
+            Network.objects.create(chain_id=self.chain_id, name="Test network 2", rpc_url="url://second_url_in_pool",
                                    max_step=1000, type=NetworkType.filterable, need_poa=True)
         except Exception:
             self.assertTrue(True)
 
     def test_network_can_have_valid_url_as_rpc_url(self):
         valid_url = "https://rpc.testnet.network"
-        Network(chain_id=123123, name="Test network", rpc_url=valid_url,
+        Network(chain_id=123123, name="Test network 2", rpc_url=valid_url,
                 max_step=1000, type=NetworkType.filterable, need_poa=True).save()
 
     def test_network_cannot_have_negative_step(self):
@@ -56,7 +56,7 @@ class TokenTestCase(TestCase):
                                                     need_poa=True)
         self.second_network = Network.objects.create(chain_id=self.second_network_chain_id, name="Polygon",
                                                      rpc_url="https://rpc.polygon.network",
-                                                     max_step=1000, type=NetworkType.names,
+                                                     max_step=1000, type=NetworkType.filterable,
                                                      need_poa=True)
 
     def test_tokens_cannot_have_same_address_inside_one_chain(self):
