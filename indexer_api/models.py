@@ -241,7 +241,7 @@ class TokenTransfer(models.Model):
     operator = models.CharField(max_length=ETHEREUM_ADDRESS_LENGTH, null=True, blank=True)
     sender = models.CharField(max_length=ETHEREUM_ADDRESS_LENGTH, validators=[validate_ethereum_address])
     recipient = models.CharField(max_length=ETHEREUM_ADDRESS_LENGTH, validators=[validate_ethereum_address])
-    tx_hash = models.CharField(max_length=ETHEREUM_TX_HASH_LENGTH, unique=True)
+    tx_hash = models.CharField(max_length=ETHEREUM_TX_HASH_LENGTH)
     token_id = models.DecimalField(max_digits=INT256_MAX_DIGITS, decimal_places=INT256_DECIMAL_PLACES, null=True,
                                    blank=True)
     amount = models.DecimalField(max_digits=INT256_MAX_DIGITS, decimal_places=INT256_DECIMAL_PLACES, null=True,

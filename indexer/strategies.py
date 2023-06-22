@@ -6,7 +6,7 @@ from typing import List, Dict
 from web3.types import ChecksumAddress
 from web3 import Web3
 
-from indexer_api.models import Token, TokenTransfer, Indexer
+from indexer_api.models import Token, TokenTransfer, Indexer, TokenType
 from .transfer_transactions import TransferTransaction
 
 logger = getLogger(__name__)
@@ -32,9 +32,26 @@ class AbstractTransferStrategy(AbstractStrategy, abc.ABC):
 
     def _save_transfer_to_database(self, token: Token, transfer_transaction: TransferTransaction):
         token_transfer = transfer_transaction.to_token_transfer_model()
+        match token.type:
+            case TokenType.erc1155:
+                self.__save_erc1155_transfer_to_database(token, token_transfer)
+            case _:
+                self.__save_other_transfer_to_database(token, token_transfer)
+
+    def __save_other_transfer_to_database(self, token: Token, token_transfer: TokenTransfer):
         if TokenTransfer.objects.filter(tx_hash=token_transfer.tx_hash).exists():
             logger.info(f"Transfer skipped: tx with hash {token_transfer.tx_hash} on token "
                         f"{token.name} (chain id: {token.network.chain_id}) already indexed")
+        else:
+            token_transfer.token_instance = token
+            token_transfer.fetched_by = self.indexer
+            token_transfer.save()
+
+    def __save_erc1155_transfer_to_database(self, token: Token, token_transfer: TokenTransfer):
+        if TokenTransfer.objects.filter(tx_hash=token_transfer.tx_hash, token_id=token_transfer.token_id).exists():
+            logger.info(f"ERC1155 Transfer skipped: tx with hash {token_transfer.tx_hash} on token "
+                        f"{token.name} with id {token_transfer.token_id} "
+                        f"(chain id: {token.network.chain_id}) already indexed")
         else:
             token_transfer.token_instance = token
             token_transfer.fetched_by = self.indexer
