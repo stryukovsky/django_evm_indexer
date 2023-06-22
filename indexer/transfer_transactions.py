@@ -1,7 +1,7 @@
 import abc
 import dataclasses
 from logging import getLogger
-from typing import Dict, List
+from typing import Dict, List, Tuple, Sequence
 
 from web3 import Web3
 from web3.types import ChecksumAddress, HexStr, HexBytes, LogReceipt
@@ -160,6 +160,7 @@ class ERC1155TransferTransaction(FungibleTransferTransaction, NonFungibleTransfe
 
     def to_token_transfer_model(self) -> TokenTransfer:
         model_instance = TokenTransfer()
+        model_instance.operator = self.operator
         model_instance.amount = self.amount
         model_instance.sender = self.sender
         model_instance.recipient = self.recipient
@@ -169,41 +170,16 @@ class ERC1155TransferTransaction(FungibleTransferTransaction, NonFungibleTransfe
 
     @classmethod
     def from_raw_log(cls, event: LogReceipt) -> List["TransferTransaction"]:
-        if len(event["topics"]) != 4:
+        if len(event["topics"]) < 4:
             return []
         data = HexBytes(event["data"])
         operator = AbiDecoder.bytes32_to_address(event["topics"][1])
         sender = AbiDecoder.bytes32_to_address(event["topics"][2])
         recipient = AbiDecoder.bytes32_to_address(event["topics"][3])
         if event["topics"][0] == cls.event_hash_single:
-            token_id = AbiDecoder.bytes32_to_uint256(data[:32])
-            amount = AbiDecoder.bytes32_to_uint256(data[32:])
-            return [ERC1155TransferTransaction(
-                operator=operator,
-                sender=sender,
-                recipient=recipient,
-                tx_hash=HexStr(event["transactionHash"].hex()),
-                token_id=token_id,
-                amount=amount)]
+            return cls._parse_single_transfer(event, data, operator, sender, recipient)
         elif event["topics"][0] == cls.event_hash_batch:
-            result: List[TransferTransaction] = []
-            ids_location = AbiDecoder.bytes32_to_uint256(data[:32])
-            amounts_location = AbiDecoder.bytes32_to_uint256(data[32:64])
-            ids = AbiDecoder.bytes_to_int_array(data, ids_location)
-            amounts = AbiDecoder.bytes_to_int_array(data, amounts_location)
-            if len(ids) != len(amounts):
-                logger.warning(f"Bad event on transaction {event['transactionHash'].hex()}")
-                return result
-            for (i, token_id) in enumerate(ids):
-                amount = amounts[i]
-                result.append(ERC1155TransferTransaction(
-                    operator=operator,
-                    sender=sender,
-                    recipient=recipient,
-                    token_id=token_id,
-                    amount=amount,
-                    tx_hash=HexStr(event["transactionHash"].hex())))
-            return result
+            return cls._parse_batch_transfer(event, data, operator, sender, recipient)
         else:
             return []
 
@@ -236,4 +212,59 @@ class ERC1155TransferTransaction(FungibleTransferTransaction, NonFungibleTransfe
                 tx_hash=event_entry["transactionHash"].hex(),
                 token_id=event_entry["args"]["id"],
                 amount=event_entry["args"]["value"]))
+        return result
+
+    @classmethod
+    def _parse_token_info_from_data(cls, data: HexBytes) -> Tuple[int, int]:
+        return AbiDecoder.bytes32_to_uint256(data[:32]), AbiDecoder.bytes32_to_uint256(data[32:])
+
+    @classmethod
+    def _parse_token_info_from_topics(cls, topics: Sequence[HexBytes]) -> Tuple[int, int]:
+        return AbiDecoder.bytes32_to_uint256(topics[4]), AbiDecoder.bytes32_to_uint256(topics[5])
+
+    @classmethod
+    def _parse_single_transfer(cls,
+                               event: LogReceipt,
+                               data: HexBytes,
+                               operator: ChecksumAddress,
+                               sender: ChecksumAddress,
+                               recipient: ChecksumAddress) -> List["TransferTransaction"]:
+        if len(event["topics"]) == 6:
+            token_id, amount = cls._parse_token_info_from_topics(event["topics"])
+        else:
+            if len(data) < 64:
+                return []
+            token_id, amount = cls._parse_token_info_from_data(data)
+        return [ERC1155TransferTransaction(
+            operator=operator,
+            sender=sender,
+            recipient=recipient,
+            tx_hash=HexStr(event["transactionHash"].hex()),
+            token_id=token_id,
+            amount=amount)]
+
+    @classmethod
+    def _parse_batch_transfer(cls,
+                              event: LogReceipt,
+                              data: HexBytes,
+                              operator: ChecksumAddress,
+                              sender: ChecksumAddress,
+                              recipient: ChecksumAddress):
+        result: List[TransferTransaction] = []
+        ids_location = AbiDecoder.bytes32_to_uint256(data[:32])
+        amounts_location = AbiDecoder.bytes32_to_uint256(data[32:64])
+        ids = AbiDecoder.bytes_to_int_array(data, ids_location)
+        amounts = AbiDecoder.bytes_to_int_array(data, amounts_location)
+        if len(ids) != len(amounts):
+            logger.warning(f"Bad event on transaction {event['transactionHash'].hex()}")
+            return result
+        for (i, token_id) in enumerate(ids):
+            amount = amounts[i]
+            result.append(ERC1155TransferTransaction(
+                operator=operator,
+                sender=sender,
+                recipient=recipient,
+                token_id=token_id,
+                amount=amount,
+                tx_hash=HexStr(event["transactionHash"].hex())))
         return result

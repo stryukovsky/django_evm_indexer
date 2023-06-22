@@ -1,3 +1,5 @@
+from typing import List, Dict
+
 from django.http.request import HttpRequest
 from django.http.response import HttpResponse, Http404
 from django.shortcuts import render, get_object_or_404, redirect
@@ -36,10 +38,21 @@ def _get_pretty_transfer(transfer: TokenTransfer) -> str:
 
 
 def transaction(request: HttpRequest, tx: str) -> HttpResponse:
-    transaction_instance = get_object_or_404(TokenTransfer, tx_hash=tx)
+    transfers: QuerySet[TokenTransfer] = TokenTransfer.objects.filter(tx_hash=tx).all()
+    if not transfers:
+        raise Http404()
+    transferred_tokens: List[Dict] = []
+    for transfer in transfers:
+        transferred_tokens.append({
+            "token_instance": transfer.token_instance,
+            "sender": transfer.sender,
+            "recipient": transfer.recipient,
+            "pretty_transfer": _get_pretty_transfer(transfer)
+        })
     context = {
-        "tx": transaction_instance,
-        "pretty_transfer": _get_pretty_transfer(transaction_instance),
+        "network": transfers[0].token_instance.network,
+        "tx_hash": tx,
+        "transfers": transferred_tokens
     }
     return render(request, "explorer/transaction.html", context)
 

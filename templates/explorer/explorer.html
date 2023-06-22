@@ -28,8 +28,8 @@
                 <h2 class="title centered">Networks</h2>
                 <div style="min-height: 100pt">
                     {% for network in networks %}
-                        <a href="{% url 'explorer_network' chain_id=network.chain_id %}"
-                           class="title">{{ network.name }}</a>
+                        <h2><a href="{% url 'explorer_network' chain_id=network.chain_id %}"
+                           class="title">{{ network.name }}</a></h2>
                     {% endfor %}
 
                 </div>

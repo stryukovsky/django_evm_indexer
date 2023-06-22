@@ -1,11 +1,12 @@
 import abc
 import json
-from typing import List, Callable, Type, Dict, Sequence, Union, cast
 from logging import getLogger
+from typing import List, Callable, Type, Dict, Sequence, cast
+
 from web3 import Web3
 from web3.contract import Contract
 from web3.contract.contract import ContractEvent
-from web3.types import TxData, HexStr, TxReceipt, HexBytes
+from web3.types import TxData, HexStr, TxReceipt
 
 from indexer.transfer_transactions import (TransferTransaction,
                                            FungibleTransferTransaction,
