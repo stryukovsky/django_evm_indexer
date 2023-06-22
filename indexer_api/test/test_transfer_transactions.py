@@ -1,4 +1,4 @@
-from typing import cast
+from typing import cast, List
 
 from django.test import TestCase
 from web3 import Web3
@@ -6,7 +6,7 @@ from web3.datastructures import AttributeDict
 from web3.types import ChecksumAddress, HexStr, HexBytes, LogReceipt
 
 from indexer.transfer_transactions import NativeCurrencyTransferTransaction, FungibleTransferTransaction, \
-    NonFungibleTransferTransaction
+    NonFungibleTransferTransaction, ERC1155TransferTransaction
 from indexer_api.models import TokenTransfer, Token, Network, NetworkType, TokenStrategy, TokenType
 
 
@@ -312,3 +312,185 @@ class NonFungibleTransferTransactionTestCase(TestCase):
         self.assertEqual(self.token_id, model_instance.token_id)
         self.assertEqual(None, model_instance.amount)
         self.assertEqual(self.token, model_instance.token_instance)
+
+
+# noinspection DuplicatedCode
+class ERC1155TransferTransactionTestCase(TestCase):
+    network: Network
+    token: Token
+
+    operator: str
+    operator_raw: str
+
+    sender: str
+    sender_raw: str
+
+    tx_hash: str
+
+    recipient: str
+    recipient_raw: str
+
+    single_amount: int
+    single_amount_raw: str
+
+    single_token_id: int
+    single_token_id_raw: str
+
+    single_transfer_data_raw: str
+
+    transfer_batch_data_raw: str
+
+    def setUp(self) -> None:
+        self.network = Network.objects.create(chain_id=1,
+                                              name="Ethereum mainnet",
+                                              rpc_url="https://ethereum.org",
+                                              max_step=1000,
+                                              type=NetworkType.filterable,
+                                              need_poa=True)
+        self.token = Token.objects.create(address="0xE9975463EAc786C68bd095EE3Ed9Fbc75E0A7A8C",
+                                          name="ERC1155",
+                                          network=self.network,
+                                          strategy=TokenStrategy.event_based_transfer,
+                                          type=TokenType.erc1155)
+        self.operator = "0x22e837c1e3380e8f38758c8490d9865433bf3ad5"
+        self.operator_raw = "0x00000000000000000000000022e837c1e3380e8f38758c8490d9865433bf3ad5"
+
+        self.sender = "0x0000000000000000000000000000000000000000"
+        self.sender_raw = "0x0000000000000000000000000000000000000000000000000000000000000000"
+
+        self.recipient = "0xc985b91ee461ea5cd76c6d131746c801097751dd"
+        self.recipient_raw = "0x000000000000000000000000c985b91ee461ea5cd76c6d131746c801097751dd"
+
+        self.single_transfer_data_raw = "0x00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000064"
+        self.single_token_id = 1
+        self.single_token_id_raw = "0x0000000000000000000000000000000000000000000000000000000000000001"
+
+        self.single_amount = 100
+        self.single_amount_raw = "0x0000000000000000000000000000000000000000000000000000000000000064"
+
+        self.tx_hash = "0x9a13e496abb52ddf8cdbec723df5c41c4004674a84939d042f807441d6159966"
+
+        self.transfer_single_raw_with_token_in_data = AttributeDict(
+            {
+                'address': '0x9363bFCe94B1A51e0Bd1cc2B17B9D67D7AD29953',
+                'topics': [
+                    HexBytes('0xc3d58168c5ae7397731d063d5bbf3d657854427343f4c083240f7aacaa2d0f62'),
+                    HexBytes(self.operator_raw),
+                    HexBytes(self.sender_raw),
+                    HexBytes(self.recipient_raw)
+                ],
+                'data': HexBytes(self.single_transfer_data_raw),
+                'blockNumber': 37142842,
+                'transactionHash': HexBytes(self.tx_hash),
+                'transactionIndex': 7,
+                'blockHash': HexBytes('0x419b6535875a2e32939abaa32cd8a54b79dd48f0923ad89b9d6ec0fbf9142280'),
+                'logIndex': 37,
+                'removed': False
+            }
+        )
+
+        self.transfer_single_raw_with_token_in_topics = AttributeDict(
+            {
+                'address': '0x9363bFCe94B1A51e0Bd1cc2B17B9D67D7AD29953',
+                'topics': [
+                    HexBytes('0xc3d58168c5ae7397731d063d5bbf3d657854427343f4c083240f7aacaa2d0f62'),
+                    HexBytes(self.operator_raw),
+                    HexBytes(self.sender_raw),
+                    HexBytes(self.recipient_raw),
+                    HexBytes(self.single_token_id_raw),
+                    HexBytes(self.single_amount_raw),
+                ],
+                'data': HexBytes("0x"),
+                'blockNumber': 37142842,
+                'transactionHash': HexBytes(self.tx_hash),
+                'transactionIndex': 7,
+                'blockHash': HexBytes('0x419b6535875a2e32939abaa32cd8a54b79dd48f0923ad89b9d6ec0fbf9142280'),
+                'logIndex': 37,
+                'removed': False
+            }
+        )
+
+        self.transfer_batch_raw = AttributeDict(
+            {
+                'address': '0x9363bFCe94B1A51e0Bd1cc2B17B9D67D7AD29953',
+                'topics': [
+                    HexBytes('0x4a39dc06d4c0dbc64b70af90fd698a233a518aa5d07e595d983b8c0526c8f7fb'),
+                    HexBytes(self.operator_raw),
+                    HexBytes(self.sender_raw),
+                    HexBytes(self.recipient_raw)
+                ],
+                'data': HexBytes(
+                    '0x'
+                    '0000000000000000000000000000000000000000000000000000000000000040'  # address of first array
+                    '00000000000000000000000000000000000000000000000000000000000000c0'  # address of second array
+                    '0000000000000000000000000000000000000000000000000000000000000003'  # length of first array
+                    '0000000000000000000000000000000000000000000000000000000000000005'  # first element of first array
+                    '0000000000000000000000000000000000000000000000000000000000000007'  # second element of first array
+                    '0000000000000000000000000000000000000000000000000000000000000000'  # third element of first array
+                    '0000000000000000000000000000000000000000000000000000000000000003'  # length of second array
+                    '00000000000000000000000000000000000000000000000000000000000001f4'  # first element of second array
+                    '00000000000000000000000000000000000000000000000000000000000002bc'  # second element of second array
+                    '0000000000000000000000000000000000000000000000000000000000000000'  # third element of second array
+                ),
+                'blockNumber': 37142842,
+                'transactionHash': HexBytes(self.tx_hash),
+                'transactionIndex': 7,
+                'blockHash': HexBytes('0x419b6535875a2e32939abaa32cd8a54b79dd48f0923ad89b9d6ec0fbf9142280'),
+                'logIndex': 41,
+                'removed': False
+            }
+        )
+        self.token_ids = [5, 7, 0]
+        self.amounts = [500, 700, 0]
+
+    def test_should_create_token_transfer_from_single_erc1155_event_with_token_in_data(self):
+        transfer_transactions = ERC1155TransferTransaction.from_raw_log(
+            cast(LogReceipt, self.transfer_single_raw_with_token_in_data))
+        self.assertEqual(1, len(transfer_transactions))
+        transfer_transaction = transfer_transactions[0]
+        model_instance = transfer_transaction.to_token_transfer_model()
+        model_instance.token_instance = self.token
+        model_instance.save()
+
+        self.assertEqual(self.operator.lower(), str(model_instance.operator).lower())
+        self.assertEqual(self.sender.lower(), model_instance.sender.lower())
+        self.assertEqual(self.recipient.lower(), model_instance.recipient.lower())
+        self.assertEqual(self.single_token_id, model_instance.token_id)
+        self.assertEqual(self.single_amount, model_instance.amount)
+
+    def test_should_create_token_transfer_from_single_erc1155_event_with_token_in_topics(self):
+        transfer_transactions = ERC1155TransferTransaction.from_raw_log(
+            cast(LogReceipt, self.transfer_single_raw_with_token_in_topics))
+        self.assertEqual(1, len(transfer_transactions))
+        transfer_transaction = transfer_transactions[0]
+        model_instance = transfer_transaction.to_token_transfer_model()
+        model_instance.token_instance = self.token
+        model_instance.save()
+
+        self.assertEqual(self.operator.lower(), str(model_instance.operator).lower())
+        self.assertEqual(self.sender.lower(), model_instance.sender.lower())
+        self.assertEqual(self.recipient.lower(), model_instance.recipient.lower())
+        self.assertEqual(self.single_token_id, model_instance.token_id)
+        self.assertEqual(self.single_amount, model_instance.amount)
+
+    def test_should_create_many_token_transfer_from_batch_erc1155_event(self):
+        transfer_transactions = ERC1155TransferTransaction.from_raw_log(
+            cast(LogReceipt, self.transfer_batch_raw))
+        self.assertEqual(3, len(transfer_transactions))
+        for transfer_transaction in transfer_transactions:
+            model_instance = transfer_transaction.to_token_transfer_model()
+            model_instance.token_instance = self.token
+            model_instance.save()
+            self.assertEqual(self.operator.lower(), str(model_instance.operator).lower())
+            self.assertEqual(self.sender.lower(), model_instance.sender.lower())
+            self.assertEqual(self.recipient.lower(), model_instance.recipient.lower())
+        tokens = TokenTransfer.objects.filter(tx_hash=self.tx_hash).values("token_id", "amount")
+        token_ids: List[int] = []
+        amounts: List[int] = []
+        for token in tokens:
+            if (token_id := token["token_id"]) is not None:
+                token_ids.append(int(token_id))
+            if (amount := token["amount"]) is not None:
+                amounts.append(int(amount))
+        self.assertEqual(self.token_ids, token_ids)
+        self.assertEqual(self.amounts, amounts)
