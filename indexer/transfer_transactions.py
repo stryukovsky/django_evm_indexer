@@ -78,13 +78,16 @@ class FungibleTransferTransaction(TransferTransaction):
             return []
         if event["topics"][0] != cls.event_hash:
             return []
+        data = HexBytes(event["data"])
         sender = AbiDecoder.bytes32_to_address(event["topics"][1])
         recipient = AbiDecoder.bytes32_to_address(event["topics"][2])
         tx_hash = HexStr(event["transactionHash"].hex())
         if len(event["topics"]) == 4:
             amount = AbiDecoder.bytes32_to_uint256(event["topics"][3])
         else:
-            amount = AbiDecoder.bytes32_to_uint256(HexBytes(event["data"]))
+            if len(data) < 32:
+                return []
+            amount = AbiDecoder.bytes32_to_uint256(data)
         return [
             FungibleTransferTransaction(
                 sender=sender,
@@ -129,7 +132,10 @@ class NonFungibleTransferTransaction(TransferTransaction):
         if len(event["topics"]) == 4:
             token_id = AbiDecoder.bytes32_to_uint256(event["topics"][3])
         else:
-            token_id = AbiDecoder.bytes32_to_uint256(HexBytes(event["data"]))
+            data = HexBytes(event["data"])
+            if len(data) < 32:
+                return []
+            token_id = AbiDecoder.bytes32_to_uint256(data)
         return [NonFungibleTransferTransaction(
             sender=AbiDecoder.bytes32_to_address(event["topics"][1]),
             recipient=AbiDecoder.bytes32_to_address(event["topics"][2]),
@@ -249,8 +255,10 @@ class ERC1155TransferTransaction(FungibleTransferTransaction, NonFungibleTransfe
                               data: HexBytes,
                               operator: ChecksumAddress,
                               sender: ChecksumAddress,
-                              recipient: ChecksumAddress):
+                              recipient: ChecksumAddress) -> List[TransferTransaction]:
         result: List[TransferTransaction] = []
+        if len(data) < 64:
+            return result
         ids_location = AbiDecoder.bytes32_to_uint256(data[:32])
         amounts_location = AbiDecoder.bytes32_to_uint256(data[32:64])
         ids = AbiDecoder.bytes_to_int_array(data, ids_location)

@@ -198,13 +198,24 @@ class TransferAPITestCase(TestCase):
         response = self.client.get("/indexer_api/transfers/").json()
         self.assertEqual(7, len(response["results"]))
 
-    def test_should_give_transfer_details(self):
-        response = self.client.get(f"/indexer_api/transfers/{self.some_tx_hash}/").json()
-        self.assertEqual(self.alice, response["sender"])
-        self.assertEqual(self.bob, response["recipient"])
-        self.assertEqual("100", response["token_transferred"]["amount"])
-        self.assertEqual("erc20", response["token_transferred"]["type"])
-        self.assertEqual(self.erc20.address, response["token_transferred"]["token"])
+    def test_should_give_transfers_in_tx_hash(self):
+        transfers = self.client.get(f"/indexer_api/transfers/?search={self.some_tx_hash}").json()
+        self.assertEqual(1, len(transfers["results"]))
+        transfer = transfers["results"][0]
+        self.assertEqual(self.alice, transfer["sender"])
+        self.assertEqual(self.bob, transfer["recipient"])
+        self.assertEqual("100", transfer["token_transferred"]["amount"])
+        self.assertEqual("erc20", transfer["token_transferred"]["type"])
+        self.assertEqual(self.erc20.address, transfer["token_transferred"]["token"])
+
+    def test_should_give_details_by_id(self):
+        transfer_from_db: TokenTransfer = TokenTransfer.objects.get(id=1)
+        transfer_from_api = self.client.get(f"/indexer_api/transfers/{transfer_from_db.id}/").json()
+        self.assertEqual(transfer_from_db.sender, transfer_from_api["sender"])
+        self.assertEqual(transfer_from_db.recipient, transfer_from_api["recipient"])
+        self.assertEqual(str(transfer_from_db.amount), transfer_from_api["token_transferred"]["amount"])
+        self.assertEqual(transfer_from_db.token_instance.type, transfer_from_api["token_transferred"]["type"])
+        self.assertEqual(transfer_from_db.token_instance.address, transfer_from_api["token_transferred"]["token"])
 
     def test_should_give_transfers_by_participant(self):
         response = self.client.get(f"/indexer_api/transfers/?search={self.eva}").json()

@@ -1,6 +1,11 @@
+import logging
 from typing import List, Literal
 from web3.types import HexBytes, ChecksumAddress
 from web3 import Web3
+
+from logging import getLogger
+
+logger = getLogger(__name__)
 
 
 class AbiDecoder:
@@ -13,8 +18,10 @@ class AbiDecoder:
 
     @classmethod
     def bytes_to_int_array(cls, data: bytes, array_location: int) -> List[int]:
-        values = []
+        values: List[int] = []
         length = cls.bytes32_to_int(data[array_location: array_location + cls.slot_size])
+        if not length:
+            return values
         start = array_location + cls.slot_size
         for i in range(length):
             values.append(cls.bytes32_to_int(data[start + i * cls.slot_size: start + (i + 1) * cls.slot_size]))

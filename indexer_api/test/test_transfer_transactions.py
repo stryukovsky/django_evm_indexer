@@ -180,6 +180,45 @@ class FungibleTransferTransactionTestCase(TestCase):
         self.assertEqual(None, model_instance.token_id)
         self.assertEqual(self.token, model_instance.token_instance)
 
+    def test_should_fail_when_no_enough_topics(self):
+        transfer_transactions = FungibleTransferTransaction.from_raw_log(cast(LogReceipt, AttributeDict(
+            {
+                'address': '0xc2132D05D31c914a87C6611C10748AEb04B58e8F',
+                'topics': [
+                    HexBytes('0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'),
+                    HexBytes(self.raw_sender),
+                ],
+                'data': HexBytes('0x'),
+                'blockNumber': 44164819,
+                'transactionHash': HexBytes(self.tx_hash),
+                'transactionIndex': 4,
+                'blockHash': HexBytes('0x3f5b3fa5038a372f4128a2bb72658393f5776b1257de1f64788a740cbea066c8'),
+                'logIndex': 5,
+                'removed': False
+            }
+        )))
+        self.assertEqual(0, len(transfer_transactions))
+
+    def test_should_fail_when_bad_data(self):
+        transfer_transactions = FungibleTransferTransaction.from_raw_log(cast(LogReceipt, AttributeDict(
+            {
+                'address': '0xc2132D05D31c914a87C6611C10748AEb04B58e8F',
+                'topics': [
+                    HexBytes('0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'),
+                    HexBytes(self.raw_sender),
+                    HexBytes(self.raw_recipient),
+                ],
+                'data': HexBytes("0x"),
+                'blockNumber': 44164819,
+                'transactionHash': HexBytes(self.tx_hash),
+                'transactionIndex': 4,
+                'blockHash': HexBytes('0x3f5b3fa5038a372f4128a2bb72658393f5776b1257de1f64788a740cbea066c8'),
+                'logIndex': 5,
+                'removed': False
+            }
+        )))
+        self.assertEqual(0, len(transfer_transactions))
+
 
 # noinspection DuplicatedCode
 class NonFungibleTransferTransactionTestCase(TestCase):
@@ -312,6 +351,47 @@ class NonFungibleTransferTransactionTestCase(TestCase):
         self.assertEqual(self.token_id, model_instance.token_id)
         self.assertEqual(None, model_instance.amount)
         self.assertEqual(self.token, model_instance.token_instance)
+
+    def test_should_fail_when_bad_topics(self):
+        # noinspection PyTypeChecker
+        transfer_transactions = NonFungibleTransferTransaction.from_raw_log(cast(LogReceipt, AttributeDict(
+            {
+                'address': '0x5D666F215a85B87Cb042D59662A7ecd2C8Cc44e6',
+                'topics': [
+                    HexBytes('0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'),
+                    HexBytes(self.sender_raw),
+                ],
+                'data': HexBytes('0x'),
+                'blockNumber': 44157100,
+                'transactionHash': HexBytes(self.tx_hash),
+                'transactionIndex': 40,
+                'blockHash': HexBytes('0x3feefff29139236aa0a63a08a8037b01c50d0c2f71b950f6773b107be825c768'),
+                'logIndex': 142,
+                'removed': False
+            }
+        )))
+        self.assertEqual(0, len(transfer_transactions))
+
+    def test_should_fail_when_bad_data(self):
+        # noinspection PyTypeChecker
+        transfer_transactions = NonFungibleTransferTransaction.from_raw_log(cast(LogReceipt, AttributeDict(
+            {
+                'address': '0x5D666F215a85B87Cb042D59662A7ecd2C8Cc44e6',
+                'topics': [
+                    HexBytes('0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'),
+                    HexBytes(self.sender_raw),
+                    HexBytes(self.recipient_raw),
+                ],
+                'data': HexBytes("0x"),
+                'blockNumber': 44157100,
+                'transactionHash': HexBytes(self.tx_hash),
+                'transactionIndex': 40,
+                'blockHash': HexBytes('0x3feefff29139236aa0a63a08a8037b01c50d0c2f71b950f6773b107be825c768'),
+                'logIndex': 142,
+                'removed': False
+            }
+        )))
+        self.assertEqual(0, len(transfer_transactions))
 
 
 # noinspection DuplicatedCode
@@ -494,3 +574,132 @@ class ERC1155TransferTransactionTestCase(TestCase):
                 amounts.append(int(amount))
         self.assertEqual(self.token_ids, token_ids)
         self.assertEqual(self.amounts, amounts)
+
+    def test_should_fail_single_transfer_when_bad_topics(self):
+        transfers = ERC1155TransferTransaction.from_raw_log(cast(LogReceipt, AttributeDict(
+            {
+                'address': '0x9363bFCe94B1A51e0Bd1cc2B17B9D67D7AD29953',
+                'topics': [
+                    HexBytes('0xc3d58168c5ae7397731d063d5bbf3d657854427343f4c083240f7aacaa2d0f62'),
+                    HexBytes(self.operator_raw),
+                    HexBytes(self.sender_raw),
+                ],
+                'data': HexBytes(self.single_transfer_data_raw),
+                'blockNumber': 37142842,
+                'transactionHash': HexBytes(self.tx_hash),
+                'transactionIndex': 7,
+                'blockHash': HexBytes('0x419b6535875a2e32939abaa32cd8a54b79dd48f0923ad89b9d6ec0fbf9142280'),
+                'logIndex': 37,
+                'removed': False
+            }
+        )))
+        self.assertEqual(0, len(transfers))
+
+    def test_should_fail_single_transfer_when_bad_data(self):
+        transfers = ERC1155TransferTransaction.from_raw_log(cast(LogReceipt, AttributeDict(
+            {
+                'address': '0x9363bFCe94B1A51e0Bd1cc2B17B9D67D7AD29953',
+                'topics': [
+                    HexBytes('0xc3d58168c5ae7397731d063d5bbf3d657854427343f4c083240f7aacaa2d0f62'),
+                    HexBytes(self.operator_raw),
+                    HexBytes(self.sender_raw),
+                    HexBytes(self.recipient_raw),
+                ],
+                'data': HexBytes("0x"),
+                'blockNumber': 37142842,
+                'transactionHash': HexBytes(self.tx_hash),
+                'transactionIndex': 7,
+                'blockHash': HexBytes('0x419b6535875a2e32939abaa32cd8a54b79dd48f0923ad89b9d6ec0fbf9142280'),
+                'logIndex': 37,
+                'removed': False
+            }
+        )))
+        self.assertEqual(0, len(transfers))
+
+    def test_should_fail_batch_transfer_when_bad_topics(self):
+        transfers = ERC1155TransferTransaction.from_raw_log(cast(LogReceipt, AttributeDict(
+            {
+                'address': '0x9363bFCe94B1A51e0Bd1cc2B17B9D67D7AD29953',
+                'topics': [
+                    HexBytes('0x4a39dc06d4c0dbc64b70af90fd698a233a518aa5d07e595d983b8c0526c8f7fb'),
+                    HexBytes(self.operator_raw),
+                    HexBytes(self.sender_raw),
+                ],
+                'data': HexBytes(
+                    '0x'
+                    '0000000000000000000000000000000000000000000000000000000000000040'  # address of first array
+                    '00000000000000000000000000000000000000000000000000000000000000c0'  # address of second array
+                    '0000000000000000000000000000000000000000000000000000000000000003'  # length of first array
+                    '0000000000000000000000000000000000000000000000000000000000000005'  # first element of first array
+                    '0000000000000000000000000000000000000000000000000000000000000007'  # second element of first array
+                    '0000000000000000000000000000000000000000000000000000000000000000'  # third element of first array
+                    '0000000000000000000000000000000000000000000000000000000000000003'  # length of second array
+                    '00000000000000000000000000000000000000000000000000000000000001f4'  # first element of second array
+                    '00000000000000000000000000000000000000000000000000000000000002bc'  # second element of second array
+                    '0000000000000000000000000000000000000000000000000000000000000000'  # third element of second array
+                ),
+                'blockNumber': 37142842,
+                'transactionHash': HexBytes(self.tx_hash),
+                'transactionIndex': 7,
+                'blockHash': HexBytes('0x419b6535875a2e32939abaa32cd8a54b79dd48f0923ad89b9d6ec0fbf9142280'),
+                'logIndex': 41,
+                'removed': False
+            }
+        )))
+        self.assertEqual(0, len(transfers))
+
+    def test_should_fail_batch_transfer_when_bad_data(self):
+        transfers = ERC1155TransferTransaction.from_raw_log(cast(LogReceipt, AttributeDict(
+            {
+                'address': '0x9363bFCe94B1A51e0Bd1cc2B17B9D67D7AD29953',
+                'topics': [
+                    HexBytes('0x4a39dc06d4c0dbc64b70af90fd698a233a518aa5d07e595d983b8c0526c8f7fb'),
+                    HexBytes(self.operator_raw),
+                    HexBytes(self.sender_raw),
+                    HexBytes(self.recipient_raw),
+                ],
+                'data': HexBytes(
+                    '0x'
+                ),
+                'blockNumber': 37142842,
+                'transactionHash': HexBytes(self.tx_hash),
+                'transactionIndex': 7,
+                'blockHash': HexBytes('0x419b6535875a2e32939abaa32cd8a54b79dd48f0923ad89b9d6ec0fbf9142280'),
+                'logIndex': 41,
+                'removed': False
+            }
+        )))
+        self.assertEqual(0, len(transfers))
+
+    def test_should_fail_batch_transfer_when_bad_address_in_data(self):
+        transfers = ERC1155TransferTransaction.from_raw_log(cast(LogReceipt, AttributeDict(
+            {
+                'address': '0x9363bFCe94B1A51e0Bd1cc2B17B9D67D7AD29953',
+                'topics': [
+                    HexBytes('0x4a39dc06d4c0dbc64b70af90fd698a233a518aa5d07e595d983b8c0526c8f7fb'),
+                    HexBytes(self.operator_raw),
+                    HexBytes(self.sender_raw),
+                    HexBytes(self.recipient_raw),
+                ],
+                'data': HexBytes(
+                    '0x'
+                    '0000000000000000000000000000000000000000000000000000000000000040'  # address of first array
+                    '00000000000000000000000000000000000000000000000000000001111111c0'  # BAD: address is overflow
+                    '0000000000000000000000000000000000000000000000000000000000000003'  # length of first array
+                    '0000000000000000000000000000000000000000000000000000000000000005'  # first element of first array
+                    '0000000000000000000000000000000000000000000000000000000000000007'  # second element of first array
+                    '0000000000000000000000000000000000000000000000000000000000000000'  # third element of first array
+                    '0000000000000000000000000000000000000000000000000000000000000003'  # length of second array
+                    '00000000000000000000000000000000000000000000000000000000000001f4'  # first element of second array
+                    '00000000000000000000000000000000000000000000000000000000000002bc'  # second element of second array
+                    '0000000000000000000000000000000000000000000000000000000000000000'  # third element of second array
+                ),
+                'blockNumber': 37142842,
+                'transactionHash': HexBytes(self.tx_hash),
+                'transactionIndex': 7,
+                'blockHash': HexBytes('0x419b6535875a2e32939abaa32cd8a54b79dd48f0923ad89b9d6ec0fbf9142280'),
+                'logIndex': 41,
+                'removed': False
+            }
+        )))
+        self.assertEqual(0, len(transfers))
