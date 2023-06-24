@@ -131,7 +131,7 @@ class TransferIndexerWorker(AbstractIndexerWorker):
         for token in tokens:
             match token.strategy:
                 case TokenStrategy.event_based_transfer.value:
-                    self.transfer_fetchers.append(EventTransferFetcher(self.w3, token, self.network.type))
+                    self.transfer_fetchers.append(EventTransferFetcher(self.w3, token))
                 case TokenStrategy.receipt_based_transfer.value:
                     self.transfer_fetchers.append(ReceiptTransferFetcher(self.w3, token))
                 case _:

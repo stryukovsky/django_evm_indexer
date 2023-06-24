@@ -38,7 +38,7 @@ class EventTransferFetcher(AbstractTransferFetcher):
     token_action_type: Type[TransferTransaction]
     network_type: str
 
-    def __init__(self, w3: Web3, token: Token, network_type: str):
+    def __init__(self, w3: Web3, token: Token):
         super().__init__(w3, token)
         abi = self._get_abi(token.type)
         address = token.address
@@ -46,7 +46,7 @@ class EventTransferFetcher(AbstractTransferFetcher):
             raise ValueError(f"Cannot fetch events on native token. Use Receipt strategy instead")
         self.contract = self.w3.eth.contract(address=w3.to_checksum_address(address), abi=abi)
         self.events = list(map(lambda event_name: cast(ContractEvent, self.contract.events[event_name]), self._get_event_names(token.type)))
-        self.network_type = network_type
+        self.network_type = token.network.type
         self.token_action_type = self._get_transfer_transaction_type(token.type)
 
     @staticmethod
@@ -55,7 +55,7 @@ class EventTransferFetcher(AbstractTransferFetcher):
             with open("indexer/abi/ERC20.json") as file:
                 return json.load(file)
         # there is the same ABI for erc721 and erc721enumerable since both have the same Transfer event signature
-        if token_type in [TokenType.erc721, TokenType.erc721enumerable]:
+        if token_type in (TokenType.erc721, TokenType.erc721enumerable):
             with open("indexer/abi/ERC721.json") as file:
                 return json.load(file)
         if token_type == TokenType.erc1155:
@@ -82,18 +82,18 @@ class EventTransferFetcher(AbstractTransferFetcher):
         if token_type in ERC1155_TOKENS:
             return ERC1155TransferTransaction
         else:
-            raise NotImplementedError(f"Bad token type {token_type}")
+            raise ValueError(f"Bad token type {token_type}")
 
     def get_transfers(self, from_block: int, to_block: int) -> List[TransferTransaction]:
         match self.network_type:
             case NetworkType.filterable:
-                return self.__get_events_with_eth_filter(from_block, to_block)
+                return self._get_events_with_standard_filter(from_block, to_block)
             case NetworkType.no_filters:
-                return self.__get_events_with_raw_filtering(from_block, to_block)
+                return self._get_events_with_raw_filter(from_block, to_block)
             case _:
                 raise NotImplementedError(f"Network filtering type {self.network_type} not implemented yet")
 
-    def __get_events_with_eth_filter(self, from_block: int, to_block: int) -> List[TransferTransaction]:
+    def _get_events_with_standard_filter(self, from_block: int, to_block: int) -> List[TransferTransaction]:
         result = []
         for event in self.events:
             entries = event.create_filter(fromBlock=from_block, toBlock=to_block).get_all_entries()
@@ -102,7 +102,7 @@ class EventTransferFetcher(AbstractTransferFetcher):
                 result.extend(token_actions)
         return result
 
-    def __get_events_with_raw_filtering(self, from_block: int, to_block: int) -> List[TransferTransaction]:
+    def _get_events_with_raw_filter(self, from_block: int, to_block: int) -> List[TransferTransaction]:
         events = self.contract.w3.eth.get_logs(
             {'fromBlock': from_block, 'toBlock': to_block, 'address': self.contract.address})
         result = []
