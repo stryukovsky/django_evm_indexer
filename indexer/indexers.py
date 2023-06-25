@@ -140,11 +140,11 @@ class TransferIndexerWorker(AbstractIndexerWorker):
     def build_strategy(self, strategy: str, strategy_params: Dict):
         match strategy:
             case IndexerStrategy.recipient.value:
-                self.strategy = RecipientStrategy(self.indexer, strategy_params)
+                self.strategy = RecipientStrategy(self.indexer)
             case IndexerStrategy.sender.value:
-                self.strategy = SenderStrategy(self.indexer, strategy_params)
+                self.strategy = SenderStrategy(self.indexer)
             case IndexerStrategy.token_scan.value:
-                self.strategy = TokenScanStrategy(self.indexer, strategy_params)
+                self.strategy = TokenScanStrategy(self.indexer)
             case _:
                 raise ValueError(f"Not implemented strategy {strategy} for TransferIndexer. Change strategy in admin")
 
