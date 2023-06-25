@@ -54,5 +54,7 @@ jobs:
         run: mypy .
       - name: Run Migrations
         run: python manage.py migrate
-      - name: Run Test
-        run: python manage.py test
+      - name: Run Tests with coverage
+        run:  coverage run --source='.' manage.py test
+      - name: prepare badge
+        run: coverage-badge -o docs/coverage.svg

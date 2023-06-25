@@ -1,5 +1,7 @@
 # Django EVM Indexer
 
+![Coverage](docs/coverage.svg)
+
 Fast and scalable solution for off-chain indexers of events.  
 Unsophisticated to configure, easy to maintain.  
 
