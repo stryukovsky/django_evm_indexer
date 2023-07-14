@@ -6,6 +6,7 @@ from decimal import Decimal
 from web3.contract import Contract
 from web3.types import ChecksumAddress
 from indexer_api.models import TokenBalance, Token
+from web3 import Web3
 
 logger = getLogger(__name__)
 
@@ -21,6 +22,30 @@ class AbstractBalanceCaller(abc.ABC):
     @abc.abstractmethod
     def get_balance(self, holder: ChecksumAddress) -> List[TokenBalance]:
         raise NotImplementedError()
+
+
+class NativeBalanceFetcher(AbstractBalanceCaller):
+    w3: Web3
+
+    def __init__(self, token: Token):
+        super().__init__(token, None)
+        self.w3 = Web3(Web3.HTTPProvider(token.network.rpc_url))
+
+    def get_balance(self, holder: ChecksumAddress) -> List[TokenBalance]:
+        balance, created = TokenBalance.objects.get_or_create(token_instance=self.token, holder=holder)
+        if created:
+            logger.info(f"Created a TokenBalance record of holder {holder} on token {self.token.name} (Native)")
+        else:
+            logger.info(
+                f"TokenBalance record of holder {holder} on token {self.token.name} exists with amount: {balance.amount}")
+        current_balance = self.w3.eth.get_balance(holder)
+        if current_balance != balance.amount:
+            logger.info(f"Balance of holder {holder} changed to {current_balance}")
+            balance.amount = current_balance
+            balance.save()
+        else:
+            logger.info(f"Balance of holder {holder} remains the same")
+        return [balance]
 
 
 class ContractBalanceFetcher(AbstractBalanceCaller, abc.ABC):

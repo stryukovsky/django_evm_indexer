@@ -9,7 +9,7 @@ from indexer_api.models import TokenType
 from web3.contract import Contract
 from web3.types import ChecksumAddress
 from .balance_callers import AbstractBalanceCaller, ERC20BalanceCaller, ERC721EnumerableBalanceCaller, \
-    ERC721BalanceCaller
+    ERC721BalanceCaller, NativeBalanceFetcher
 
 
 class AbstractBalanceFetcher(abc.ABC):
@@ -20,9 +20,9 @@ class AbstractBalanceFetcher(abc.ABC):
     def __init__(self, w3: Web3, token: Token, indexer: Indexer):
         self.w3 = w3
         self.token = token
-        abi = self._get_abi(token.type)
         address = token.address
         if address:
+            abi = self._get_abi(token.type)
             self.contract = self.w3.eth.contract(address=w3.to_checksum_address(address), abi=abi)
         else:
             self.contract = None
@@ -58,6 +58,8 @@ class AbstractBalanceFetcher(abc.ABC):
                 self.balance_caller = ERC721BalanceCaller(self.token, self.contract)
             case TokenType.erc721enumerable:
                 self.balance_caller = ERC721EnumerableBalanceCaller(self.token, self.contract)
+            case TokenType.native:
+                self.balance_caller = NativeBalanceFetcher(self.token)
             case TokenType.erc1155:
                 raise NotImplementedError("Balance Fetcher: ERC1155 is not implemented yet")
             case TokenType.erc777:
@@ -73,4 +75,4 @@ class SimpleBalanceFetcher(AbstractBalanceFetcher):
             for balance in balances:
                 balance.tracked_by = self.indexer
                 balance.save()
-                time.sleep(1)
+                time.sleep(self.indexer.long_sleep_seconds)
